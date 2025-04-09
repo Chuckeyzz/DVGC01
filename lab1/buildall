@@ -1,0 +1,32 @@
+echo "*** starting build of parser demo"
+echo "*** Build and test the driver programs"
+
+gcc  -o tlexer Dlexer.c     keytoktab.c    lexer.c
+gcc  -o ttok   Dkeytoktab.c keytoktab.c
+gcc  -o tsym   Dsymtab.c    keytoktab.c    symtab.c
+gcc  -o top    Doptab.c     keytoktab.c    optab.c
+
+echo "*** Running tests"
+
+./tlexer < testok1.pas > Dlexer.out
+./ttok   > Dtoktab.out
+./tsym   > Dsymtab.out
+./top    > Doptab.out
+
+echo "*** end of driver tests"
+
+echo "*** Building Parser"
+
+gcc -o parser driver.c lexer.c parser.c keytoktab.c symtab.c optab.c
+
+echo "*** Running parser test (testok1.pas)"
+
+./parser < testok1.pas
+
+echo "*** End of parser test"
+
+echo "*** Running all tests (testall.sh)"
+
+./testall.sh > alltests.out
+
+echo "*** End of all tests"
