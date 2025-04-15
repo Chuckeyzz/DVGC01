@@ -74,7 +74,15 @@ static tab keywordtab[ ] = {
 /**********************************************************************/
 void p_toktab()
 {
-    printf("\n *** TO BE DONE");
+    printf("\nTHE PROGRAM KEYWORDS");
+    for(int i = 0; i < (sizeof(keywordtab) / sizeof(keywordtab[0])); i++){
+        printf("\n%-12s %4d", keywordtab[i].text, keywordtab[i].token);
+    }
+    
+    printf("\n\nTHE PROGRAM TOKENS");
+    for(int i = 0; i < (sizeof(tokentab) / sizeof(tokentab[0])); i++){
+        printf("\n%-12s %4d", tokentab[i].text, tokentab[i].token);
+    }
 }
 
 /**********************************************************************/
@@ -82,15 +90,33 @@ void p_toktab()
 /**********************************************************************/
 toktyp lex2tok(char * fplex)
 {
-    printf("\n *** TO BE DONE");  return 0;
+    for(int i = 0; i < (sizeof(tokentab) / sizeof(tokentab[0])); i++){
+        if(strcmp(tokentab[i].text, fplex) == 0){
+            return tokentab[i].token;
+        }
+    }
+    
+    for(int i = 0; i < (sizeof(keywordtab) / sizeof(keywordtab[0])); i++){
+        if(strcmp(keywordtab[i].text, fplex) == 0){
+            return keywordtab[i].token;
+        }
+    }
+    
+    return tokentab[0].token;
 }
 
 /**********************************************************************/
 /* key2tok - convert a keyword to a token                             */
 /**********************************************************************/
 toktyp key2tok(char * fplex)
-{
-    printf("\n *** TO BE DONE");  return 0;
+{ 
+    for(int i = 0; i < (sizeof(keywordtab) / sizeof(keywordtab[0])); i++){
+        if(strcmp(keywordtab[i].text, fplex) == 0){
+            return keywordtab[i].token;
+        }
+    }
+    
+    return tokentab[0].token;
 }
 
 /**********************************************************************/
@@ -98,7 +124,19 @@ toktyp key2tok(char * fplex)
 /**********************************************************************/
 char * tok2lex(toktyp ftok)
 {
-    printf("\n *** TO BE DONE");  return 0;
+    for(int i = 0; i < (sizeof(tokentab) / sizeof(tokentab[0])); i++){
+        if(tokentab[i].token == ftok){
+            return tokentab[i].text;
+        }
+    }
+
+    for(int i = 0; i < (sizeof(keywordtab) / sizeof(keywordtab[0])); i++){
+        if(keywordtab[i].token == ftok){
+            return keywordtab[i].text;
+        }
+    }
+    
+    return tokentab[0].text;
 }
 
 /**********************************************************************/
