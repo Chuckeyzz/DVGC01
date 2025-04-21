@@ -6,6 +6,7 @@
 /* Include files                                                      */
 /**********************************************************************/
 #include <stdio.h>
+#include <stdbool.h>
 #include <ctype.h>
 #include <string.h>
 
@@ -23,6 +24,7 @@ static char buffer[BUFSIZE];
 static char lexbuf[LEXSIZE];
 static int  pbuf  = 0;               /* current index program buffer  */
 static int  plex  = 0;               /* current index lexeme  buffer  */
+bool cutoff = false;
 
 /**********************************************************************/
 /*  PRIVATE METHODS for this OBJECT  (using "static" in C)            */
@@ -36,8 +38,26 @@ static int  plex  = 0;               /* current index lexeme  buffer  */
 
 static void get_prog()
 {
-    printf("\n *** TO BE DONE");
+	char temp;
+	//read stream from stdin, in our case > testfilexxx.pas
+    while((temp = fgetc(stdin)) != EOF) {
+		if(pbuf < BUFSIZE)
+			buffer[pbuf++] = temp;
+		else
+			break;
+
+	}
+	
+	
+	/*if(fgets(buffer, BUFSIZE, stdin) != NULL) {
+		//possibly add handling for $-terminator
+	}
+	else {
+		printf("error reading to buffer from stdin");
+	}
+	//file written into buffer*/
 }
+
 
 /**********************************************************************/
 /* Display the buffer                                                 */
@@ -45,7 +65,9 @@ static void get_prog()
 
 static void pbuffer()
 {
-    printf("\n *** TO BE DONE");
+    for(int i = 0; i < sizeof(lexbuf);i++){
+		printf("%c" ,lexbuf[i]);
+	}
 }
 
 /**********************************************************************/
@@ -54,7 +76,7 @@ static void pbuffer()
 
 static void get_char()
 {
-    printf("\n *** TO BE DONE");
+	lexbuf[plex++] = buffer[pbuf++];
 }
 
 /**********************************************************************/
@@ -69,7 +91,52 @@ static void get_char()
 /**********************************************************************/
 int get_token()
 {
-    printf("\n *** TO BE DONE"); return 0;
+	get_prog();
+	plex = 0;
+	bool cutoff = false;
+	get_char(); //get first char
+
+	while(!cutoff){
+		//handle whitespaces
+		while (isspace(buffer[pbuf]))
+		{
+			pbuf++;
+			if(plex != 0){
+				cutoff = true;
+				break;
+			}
+		}
+
+		if(!isalnum(lexbuf[plex]) && !isspace(buffer[pbuf])) {
+			if(plex != 0 && isalnum(lexbuf[plex -1])) {
+				cutoff = true; //we have either an id or a keyword
+				break;
+			}
+			cutoff = true; //we have an operand
+			pbuf++;
+			break;
+		}
+
+		if(isalpha(lexbuf[plex])){
+			//id or keyword
+			if(isalnum(buffer[pbuf])){
+				get_char();
+			}
+			else{
+				cutoff = true;
+			}
+		}		
+	}
+
+	
+
+	//we land here after cutoff = true;
+	for(int i = 0; i < LEXSIZE; i++){
+		printf("%c ", lexbuf[i]);
+		printf("Hello");
+	}
+	printf("\ncalling lex2tok\n");
+	return lex2tok(lexbuf);
 }
 
 /**********************************************************************/
@@ -77,7 +144,7 @@ int get_token()
 /**********************************************************************/
 char * get_lexeme()
 {
-    printf("\n *** TO BE DONE"); return "$";
+   printf("\n *** TO BE DONE"); return "$";
 }
 
 /**********************************************************************/
