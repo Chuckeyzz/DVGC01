@@ -17,6 +17,7 @@
 /**********************************************************************/
 /* Other OBJECT's METHODS (IMPORTED)                                  */
 /**********************************************************************/
+
 #include "keytoktab.h"     /* when the keytoktab is added   */
 #include "lexer.h"         /* when the lexer     is added   */
 /* #include "symtab.h"      */       /* when the symtab    is added   */
@@ -62,7 +63,7 @@ static int tokens[] = {program, id, '(', input, ',', output, ')', ';',
             id, assign, id, '+', id, '*', number, ';',
             id, assign, id, '+', id, '*', number,
             end, '.', '$'};
-			
+
 
 /**********************************************************************/
 /*  Simulate the lexer -- get the next token from the buffer          */
