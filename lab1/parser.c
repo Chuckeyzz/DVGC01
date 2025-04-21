@@ -17,15 +17,16 @@
 /**********************************************************************/
 /* Other OBJECT's METHODS (IMPORTED)                                  */
 /**********************************************************************/
-#include "keytoktab.h"      /* when the keytoktab is added   */
-/* #include "lexer.h"       */       /* when the lexer     is added   */
+
+#include "keytoktab.h"     /* when the keytoktab is added   */
+#include "lexer.h"         /* when the lexer     is added   */
 /* #include "symtab.h"      */       /* when the symtab    is added   */
 /* #include "optab.h"       */       /* when the optab     is added   */
 
 /**********************************************************************/
 /* OBJECT ATTRIBUTES FOR THIS OBJECT (C MODULE)                       */
 /**********************************************************************/
-#define DEBUG 1
+#define DEBUG 0
 static int  lookahead=0;
 static int  is_parse_ok=1;
 
@@ -63,15 +64,16 @@ static int tokens[] = {program, id, '(', input, ',', output, ')', ';',
             id, assign, id, '+', id, '*', number,
             end, '.', '$'};
 
+
 /**********************************************************************/
 /*  Simulate the lexer -- get the next token from the buffer          */
 /**********************************************************************/
 static int pget_token()
-{
-    static int i=0;
-    if (tokens[i] != '$') return tokens[i++]; else return '$';
-}
-
+					{
+						static int i=0;
+						if (tokens[i] != '$') return tokens[i++]; else return '$';
+					}
+//removed according to instructions
 /**********************************************************************/
 /*  PRIVATE METHODS for this OBJECT  (using "static" in C)            */
 /**********************************************************************/
@@ -116,8 +118,8 @@ static void program_header()
 int parser()
 {
     in("parser");
-    lookahead = pget_token();       // get the first token
-    prog();               // call the first grammar rule
+    lookahead = get_token();       // get the first token
+    prog();               		// call the first grammar rule
     out("parser");
     return is_parse_ok;             // status indicator
 }
