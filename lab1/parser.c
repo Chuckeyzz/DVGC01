@@ -17,7 +17,6 @@
 /**********************************************************************/
 /* Other OBJECT's METHODS (IMPORTED)                                  */
 /**********************************************************************/
-
 #include "keytoktab.h"     /* when the keytoktab is added   */
 #include "lexer.h"         /* when the lexer     is added   */
 /* #include "symtab.h"      */       /* when the symtab    is added   */
@@ -26,7 +25,7 @@
 /**********************************************************************/
 /* OBJECT ATTRIBUTES FOR THIS OBJECT (C MODULE)                       */
 /**********************************************************************/
-#define DEBUG 0
+#define DEBUG 1
 static int  lookahead=0;
 static int  is_parse_ok=1;
 
@@ -54,7 +53,7 @@ static void operand();
 /**********************************************************************/
 /* Simulate the token stream for a given program                      */
 /**********************************************************************/
-static int tokens[] = {program, id, '(', input, ',', output, ')', ';',
+/*static int tokens[] = {program, id, '(', input, ',', output, ')', ';',
             var, id, ',', id, ',', id, ':', integer, ';', 
             id, ',', id, ',', id, ':', integer, ';',
             id, ',', id, ',', id, ':', integer, ';',
@@ -63,16 +62,16 @@ static int tokens[] = {program, id, '(', input, ',', output, ')', ';',
             id, assign, id, '+', id, '*', number, ';',
             id, assign, id, '+', id, '*', number,
             end, '.', '$'};
-
+			*/
 
 /**********************************************************************/
 /*  Simulate the lexer -- get the next token from the buffer          */
 /**********************************************************************/
-static int pget_token()
+/*static int pget_token()
 					{
 						static int i=0;
 						if (tokens[i] != '$') return tokens[i++]; else return '$';
-					}
+					}*/
 //removed according to instructions
 /**********************************************************************/
 /*  PRIVATE METHODS for this OBJECT  (using "static" in C)            */
@@ -92,7 +91,7 @@ static void match(int t)
 {
     if(DEBUG) printf("\n *** In match expected: %4s, found: %4s",
                     tok2lex(t), tok2lex(lookahead));
-    if (lookahead == t) lookahead = pget_token();
+    if (lookahead == t) lookahead = get_token();
     else {
     is_parse_ok=0;
     printf("\n *** Unexpected Token: expected: %4s found: %4s (in match)",
@@ -126,7 +125,7 @@ int parser()
 
 
 static void prog(){
-    program_header();
+   program_header();
     varpart();
     statpart();
 }
