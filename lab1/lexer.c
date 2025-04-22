@@ -25,6 +25,7 @@ static char lexbuf[LEXSIZE];
 static int  pbuf  = 0;               /* current index program buffer  */
 static int  plex  = 0;               /* current index lexeme  buffer  */
 bool cutoff = false;
+bool firstrun = true;
 
 /**********************************************************************/
 /*  PRIVATE METHODS for this OBJECT  (using "static" in C)            */
@@ -39,23 +40,20 @@ bool cutoff = false;
 static void get_prog()
 {
 	char temp;
+	firstrun = false;
 	//read stream from stdin, in our case > testfilexxx.pas
+
+	//works
     while((temp = fgetc(stdin)) != EOF) {
-		if(pbuf < BUFSIZE)
+		if(pbuf < BUFSIZE - 1)
 			buffer[pbuf++] = temp;
 		else
 			break;
 
 	}
+	buffer[pbuf] = '$';
+	pbuf = 0;
 	
-	
-	/*if(fgets(buffer, BUFSIZE, stdin) != NULL) {
-		//possibly add handling for $-terminator
-	}
-	else {
-		printf("error reading to buffer from stdin");
-	}
-	//file written into buffer*/
 }
 
 
@@ -76,6 +74,10 @@ static void pbuffer()
 
 static void get_char()
 {
+	//clear any whitespaces
+	while(isspace(buffer[pbuf])){
+		pbuf++;
+	}
 	lexbuf[plex++] = buffer[pbuf++];
 }
 
@@ -91,60 +93,36 @@ static void get_char()
 /**********************************************************************/
 int get_token()
 {
-	get_prog();
-	plex = 0;
-	bool cutoff = false;
-	get_char(); //get first char
+	if(firstrun) {
+		get_prog();
+	}
+	plex = 0;							//reset plex 
+	memset(lexbuf,0,sizeof(lexbuf));    //reset the lexbuffer at the start of every call to get_token
+	get_char(); 						//get first char
 
-	while(!cutoff){
-		//handle whitespaces
-		while (isspace(buffer[pbuf]))
-		{
-			pbuf++;
-			if(plex != 0){
-				cutoff = true;
-				break;
-			}
-		}
-
-		if(!isalnum(lexbuf[plex]) && !isspace(buffer[pbuf])) {
-			if(plex != 0 && isalnum(lexbuf[plex -1])) {
-				cutoff = true; //we have either an id or a keyword
-				break;
-			}
-			cutoff = true; //we have an operand
-			pbuf++;
+    
+	while (isalnum(buffer[pbuf])) {
+		//handle signs 
+        if(!isalnum(buffer[pbuf - 1]) && !isspace(buffer[pbuf - 1])){
 			break;
 		}
-
-		if(isalpha(lexbuf[plex])){
-			//id or keyword
-			if(isalnum(buffer[pbuf])){
-				get_char();
-			}
-			else{
-				cutoff = true;
-			}
-		}		
+		get_char();
 	}
-
-	
-
-	//we land here after cutoff = true;
-	for(int i = 0; i < LEXSIZE; i++){
-		printf("%c ", lexbuf[i]);
-		printf("Hello");
+	//handle assign
+	if(buffer[pbuf -1] == ':' && buffer[pbuf] == '='){
+			get_char();
 	}
-	printf("\ncalling lex2tok\n");
 	return lex2tok(lexbuf);
 }
+
+
 
 /**********************************************************************/
 /* Return a lexeme                                                    */
 /**********************************************************************/
 char * get_lexeme()
 {
-   printf("\n *** TO BE DONE"); return "$";
+	return lexbuf;
 }
 
 /**********************************************************************/

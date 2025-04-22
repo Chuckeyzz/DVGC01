@@ -1,4 +1,8 @@
 /**********************************************************************/
+/*Per Emilsson och Kenny Pettersson                                   */
+/**********************************************************************/
+
+/**********************************************************************/
 /* lab 1 DVG C01 - Driver OBJECT                                      */
 /**********************************************************************/
 
@@ -101,8 +105,11 @@ toktyp lex2tok(char * fplex)
             return keywordtab[i].token;
         }
     }
-    
-    return tokentab[0].token;
+	//handle digits
+    if(isdigit((int)*fplex)) {
+		return tokentab[1].token;
+	}
+	return tokentab[0].token;
 }
 
 /**********************************************************************/
@@ -114,8 +121,8 @@ toktyp key2tok(char * fplex)
         if(strcmp(keywordtab[i].text, fplex) == 0){
             return keywordtab[i].token;
         }
-    }
-    
+    }	
+
     return tokentab[0].token;
 }
 
