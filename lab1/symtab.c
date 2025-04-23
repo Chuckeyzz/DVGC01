@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdbool.h>
 
 /**********************************************************************/
 /* Other OBJECT's METHODS (IMPORTED)                                  */
@@ -28,12 +29,16 @@ static toktyp type[TABSIZE];
 static int    size[TABSIZE];
 static int    addr[TABSIZE];
 
+static int addrindex=0;
+static bool initialized=false;
+
 static int numrows=0;                  /* number of rows in the ST    */
 static int startp =0;                  /* start position program in ST*/
 
 /**********************************************************************/
 /*  PRIVATE METHODS for this OBJECT  (using "static" in C)            */
 /**********************************************************************/
+
 /**********************************************************************/
 /*  GET methods (one for each attribute)                              */
 /**********************************************************************/
@@ -59,7 +64,12 @@ static void set_addr(int ftref, int    faddr)  { addr[ftref] = faddr; }
 static void addrow(char *fname, toktyp frole, toktyp ftype,
                    int fsize, int faddr)
 {
-    printf("\n *** TO BE DONE");
+    set_name(numrows, fname);
+    set_role(numrows, frole);
+    set_type(numrows, ftype);
+    set_size(numrows, fsize);
+    set_addr(numrows, faddr);
+    numrows++;
 }
 /**********************************************************************/
 /*  Initialise the symbol table                                       */
@@ -72,13 +82,26 @@ static void initst()
     addrow(tok2lex(integer), typ, predef, 4, 0);
     addrow(tok2lex(boolean), typ, predef, 4, 0);
     addrow(tok2lex(real),    typ, predef, 8, 0);
+    initialized = true;
 }
 /**********************************************************************/
 /*  return a reference to the ST (index) if name found else nfound    */
 /**********************************************************************/
 static int get_ref(char * fpname)
 {
-    printf("\n *** TO BE DONE"); return 0;
+    for(int i = 0; i < startp; i++){
+        if(strcmp(name[i], fpname) == 0){
+            return i;
+        }
+    } 
+    return 0;
+}
+
+static updatevar(int varsize, int varaddr, int index){
+    size[index] = varsize;
+    addr[index] = varaddr;
+    addrindex += varsize;
+    set_size(startp,get_size(startp)+varsize);
 }
 
 /**********************************************************************/
@@ -94,7 +117,11 @@ static void p_symrow(int ftref)
 
 void p_symtab()
 {
-    printf("\n *** TO BE DONE");
+    if(numrows>0){
+        for(int i = startp; i < numrows; i++){
+            printf("\n%-12s %4s %s %d %d", name[i], tok2lex(role[i]), tok2lex(type[i]), size[i], addr[i]);
+        }
+    }
 }
 
 /**********************************************************************/
@@ -102,7 +129,10 @@ void p_symtab()
 /**********************************************************************/
 void addp_name(char * fpname)
 {
-    printf("\n *** TO BE DONE");
+    if(!initialized){initst();}
+
+    startp = numrows;
+    addrow(fpname, program, program, 0, 0);
 }
 
 /**********************************************************************/
@@ -110,7 +140,7 @@ void addp_name(char * fpname)
 /**********************************************************************/
 void addv_name(char * fpname)
 {
-    printf("\n *** TO BE DONE");
+    addrow(fpname, var, var, 0, 0);
 }
 
 /**********************************************************************/
@@ -119,7 +149,12 @@ void addv_name(char * fpname)
 /**********************************************************************/
 int find_name(char * fpname)
 {
-    printf("\n *** TO BE DONE"); return 0;
+    for(int i = 0; i < numrows; i++){
+        if(strcmp(name[i], fpname) == 0){
+            return 1;
+        }
+    } 
+    return 0;
 }
 
 /**********************************************************************/
@@ -127,7 +162,24 @@ int find_name(char * fpname)
 /**********************************************************************/
 void setv_type(toktyp ftype)
 {
-    printf("\n *** TO BE DONE");
+    if(numrows>0){
+        for(int i = 0; i < numrows; i++){
+            if(type[i] == var){
+                type[i] = ftype;
+                switch(ftype){
+                    case(integer):
+                        updatevar(get_size(get_ref("integer")), addrindex, i);
+                        break;
+                    case(real):
+                        updatevar(get_size(get_ref("real")), addrindex, i);
+                        break;
+                    case(boolean):
+                        updatevar(get_size(get_ref("boolean")), addrindex, i);
+                        break;
+                }
+            }
+        }
+    }
 }
 
 /**********************************************************************/
@@ -135,7 +187,12 @@ void setv_type(toktyp ftype)
 /**********************************************************************/
 toktyp get_ntype(char * fpname)
 {
-    printf("\n *** TO BE DONE"); return 0;
+    for(int i = 0; i < numrows; i++){
+        if(strcmp(name[i], fpname) == 0){
+            return type[i];
+        }
+    } 
+    return 0;
 }
 
 /**********************************************************************/

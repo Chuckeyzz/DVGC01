@@ -19,7 +19,7 @@
 /**********************************************************************/
 #include "keytoktab.h"     /* when the keytoktab is added   */
 #include "lexer.h"         /* when the lexer     is added   */
-/* #include "symtab.h"      */       /* when the symtab    is added   */
+#include "symtab.h"        /* when the symtab    is added   */
 /* #include "optab.h"       */       /* when the optab     is added   */
 
 /**********************************************************************/
@@ -105,8 +105,17 @@ static void match(int t)
 static void program_header()
 {
     in("program_header");
-    match(program); match(id); match('('); match(input);
-    match(','); match(output); match(')'); match(';');
+    match(program);
+    
+    addp_name(get_lexeme()); //Add the program to the symtab
+    
+    match(id);
+    match('('); 
+    match(input);
+    match(','); 
+    match(output); 
+    match(')'); 
+    match(';');
     out("program_header");
 }
 
@@ -119,6 +128,7 @@ int parser()
     in("parser");
     lookahead = get_token();       // get the first token
     prog();               		// call the first grammar rule
+    p_symtab();
     out("parser");
     return is_parse_ok;             // status indicator
 }
@@ -155,7 +165,8 @@ static void vardec(){
 }
 
 static void idlist(){
-    in("idlist");
+    in("idlist");  
+    addv_name(get_lexeme());
     match(id);
     if(lookahead == ',') {
         match(',');
@@ -165,11 +176,16 @@ static void idlist(){
 }
 static void type(){
     in("type");
-    if(lookahead == integer)
+    if(lookahead == integer){
+        setv_type(integer);
         match(integer);
-    else if(lookahead == boolean)
+    }
+    else if(lookahead == boolean){
+        setv_type(boolean);
         match(boolean);
+    }
     else if (lookahead == real){
+        setv_type(real);
         match(real);
     }
     out("type");
@@ -200,6 +216,11 @@ static void stat(){
 
 static void assignstat(){
 	in("assign stat");
+    //printf("\n%s", get_lexeme());
+    if (!find_name(get_lexeme())) {
+        printf("\nError: '%s' undeclared.", get_lexeme());
+        is_parse_ok = 0;
+    }
 	match(id);
 	match(assign);
 	expr();
