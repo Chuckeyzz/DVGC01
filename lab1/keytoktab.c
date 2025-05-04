@@ -94,6 +94,15 @@ void p_toktab()
 /**********************************************************************/
 toktyp lex2tok(char * fplex)
 {
+	if((strcmp(tokentab[0].text, fplex) == 0) || (strcmp(tokentab[1].text, fplex) == 0)|| (strcmp("assign", fplex) == 0)) {
+		return id;
+	}
+
+	//handle digits
+    if(isdigit((int)*fplex)) {
+		return tokentab[1].token;
+	}
+
     for(int i = 0; i < (sizeof(tokentab) / sizeof(tokentab[0])); i++){
         if(strcmp(tokentab[i].text, fplex) == 0){
             return tokentab[i].token;
@@ -105,10 +114,7 @@ toktyp lex2tok(char * fplex)
             return keywordtab[i].token;
         }
     }
-	//handle digits
-    if(isdigit((int)*fplex)) {
-		return tokentab[1].token;
-	}
+	
 	return tokentab[0].token;
 }
 
@@ -143,7 +149,7 @@ char * tok2lex(toktyp ftok)
         }
     }
     
-    return tokentab[0].text;
+    return tokentab[6].text;
 }
 
 /**********************************************************************/

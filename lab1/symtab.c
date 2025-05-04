@@ -1,4 +1,8 @@
 /**********************************************************************/
+/*Per Emilsson och Kenny Pettersson                                   */
+/**********************************************************************/
+
+/**********************************************************************/
 /* lab 1 DVG C01 - Symbol Table OBJECT                                */
 /**********************************************************************/
 
@@ -97,7 +101,7 @@ static int get_ref(char * fpname)
     return 0;
 }
 
-static updatevar(int varsize, int varaddr, int index){
+static void updatevar(int varsize, int varaddr, int index){
     size[index] = varsize;
     addr[index] = varaddr;
     addrindex += varsize;
@@ -112,16 +116,17 @@ static updatevar(int varsize, int varaddr, int index){
 /**********************************************************************/
 static void p_symrow(int ftref)
 {
-    printf("\n *** TO BE DONE");
+    printf("\n%-12s %4s %s %d %d", get_name(ftref), tok2lex(get_role(ftref)), tok2lex(get_type(ftref)), get_size(ftref), get_addr(ftref));
 }
 
 void p_symtab()
 {
     if(numrows>0){
         for(int i = startp; i < numrows; i++){
-            printf("\n%-12s %4s %s %d %d", name[i], tok2lex(role[i]), tok2lex(type[i]), size[i], addr[i]);
+			p_symrow(i);
         }
     }
+	printf("\nSTATIC STORAGE REQUIRED is %d BYTES\n", get_size(startp));
 }
 
 /**********************************************************************/
@@ -176,6 +181,11 @@ void setv_type(toktyp ftype)
                     case(boolean):
                         updatevar(get_size(get_ref("boolean")), addrindex, i);
                         break;
+					case (error):
+						updatevar(get_size(get_ref("error")), addrindex, i);
+						break;
+					default:
+						break;
                 }
             }
         }

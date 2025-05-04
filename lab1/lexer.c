@@ -1,4 +1,8 @@
 /**********************************************************************/
+/*Per Emilsson och Kenny Pettersson                                   */
+/**********************************************************************/
+
+/**********************************************************************/
 /* lab 1 DVG C01 - Lexer OBJECT                                       */
 /**********************************************************************/
 
@@ -22,10 +26,12 @@
 #define LEXSIZE   30
 static char buffer[BUFSIZE];
 static char lexbuf[LEXSIZE];
+static void pbuffer();
 static int  pbuf  = 0;               /* current index program buffer  */
 static int  plex  = 0;               /* current index lexeme  buffer  */
 bool cutoff = false;
 bool firstrun = true;
+
 
 /**********************************************************************/
 /*  PRIVATE METHODS for this OBJECT  (using "static" in C)            */
@@ -53,7 +59,8 @@ static void get_prog()
 	}
 	buffer[pbuf] = '$';
 	pbuf = 0;
-	
+	if(pbuf == 9999)
+		pbuffer();
 }
 
 
@@ -63,8 +70,8 @@ static void get_prog()
 
 static void pbuffer()
 {
-    for(int i = 0; i < sizeof(lexbuf);i++){
-		printf("%c" ,lexbuf[i]);
+    for(int i = pbuf; i < sizeof(buffer);i++){
+		printf("%c" ,buffer[i]);
 	}
 }
 
@@ -104,6 +111,10 @@ int get_token()
 	while (isalnum(buffer[pbuf])) {
 		//handle signs 
         if(!isalnum(buffer[pbuf - 1]) && !isspace(buffer[pbuf - 1])){
+			break;
+		}
+		//handle variables starting with number
+		if(isdigit(buffer[pbuf-1]) && (isalpha(buffer[pbuf]))){
 			break;
 		}
 		get_char();

@@ -2,7 +2,6 @@
 /*Per Emilsson och Kenny Pettersson                                   */
 /**********************************************************************/
 
-
 /**********************************************************************/
 /* lab 1 DVG C01 - Parser OBJECT                                      */
 /**********************************************************************/
@@ -20,12 +19,12 @@
 #include "keytoktab.h"     /* when the keytoktab is added   */
 #include "lexer.h"         /* when the lexer     is added   */
 #include "symtab.h"        /* when the symtab    is added   */
-/* #include "optab.h"       */       /* when the optab     is added   */
+#include "optab.h"         /* when the optab     is added   */
 
 /**********************************************************************/
 /* OBJECT ATTRIBUTES FOR THIS OBJECT (C MODULE)                       */
 /**********************************************************************/
-#define DEBUG 1
+#define DEBUG 0
 static int  lookahead=0;
 static int  is_parse_ok=1;
 
@@ -39,10 +38,12 @@ static void statpart();
 static void stat();
 static void statlist();
 static void assignstat();
-static void expr();
-static void term();
-static void factor();
-static void operand();
+static void leftinbuf();
+static toktyp expr();
+static toktyp term();
+static toktyp factor();
+static toktyp operand();
+
 
 /**********************************************************************/
 /* RAPID PROTOTYPING - simulate the token stream & lexer (get_token)  */
@@ -94,8 +95,8 @@ static void match(int t)
     if (lookahead == t) lookahead = get_token();
     else {
     is_parse_ok=0;
-    printf("\n *** Unexpected Token: expected: %4s found: %4s (in match)",
-              tok2lex(t), tok2lex(lookahead));
+    printf("SYNTAX:   Symbol expected %s found %s\n", tok2lex(t),
+               get_lexeme());
     }
 }
 
@@ -106,9 +107,11 @@ static void program_header()
 {
     in("program_header");
     match(program);
-    
-    addp_name(get_lexeme()); //Add the program to the symtab
-    
+	if(lex2tok(get_lexeme()) == id){
+    	addp_name(get_lexeme()); //Add the program to the symtab
+	}
+	else	
+		addp_name("***");
     match(id);
     match('('); 
     match(input);
@@ -126,8 +129,17 @@ static void program_header()
 int parser()
 {
     in("parser");
-    lookahead = get_token();       // get the first token
-    prog();               		// call the first grammar rule
+    lookahead = get_token();	      // get the first token
+	if(lookahead == '$'){
+		printf("WARNING: Input file is empty\n");
+		is_parse_ok = 0;
+	}
+	if(is_parse_ok){
+		prog(); 	           		// call the first grammar rule
+	}
+	if(lookahead != '$'){
+		leftinbuf();
+	}
     p_symtab();
     out("parser");
     return is_parse_ok;             // status indicator
@@ -135,8 +147,8 @@ int parser()
 
 
 static void prog(){
-   program_header();
-    varpart();
+	program_header();
+	varpart();
     statpart();
 }
 
@@ -158,15 +170,24 @@ static void vardeclist(){
 static void vardec(){
     in("vardec");
     idlist();
-    match(':');
-    type();
+	match(':');
+	type();
     match(';');
     out("vardec");
 }
 
 static void idlist(){
     in("idlist");  
-    addv_name(get_lexeme());
+    if(lookahead == id) {	
+		if(!find_name(get_lexeme())) {
+			addv_name(get_lexeme());
+		}
+		else {
+		printf("\nSEMANTIC: ID already declared: %s\n", get_lexeme());
+		is_parse_ok = 0;
+		}
+}
+	
     match(id);
     if(lookahead == ',') {
         match(',');
@@ -188,6 +209,10 @@ static void type(){
         setv_type(real);
         match(real);
     }
+	else{
+		setv_type(error);
+		printf("SYNTAX:	Type name expected found  %s\n", get_lexeme());
+	}
     out("type");
 }
 
@@ -216,58 +241,95 @@ static void stat(){
 
 static void assignstat(){
 	in("assign stat");
-    //printf("\n%s", get_lexeme());
-    if (!find_name(get_lexeme())) {
-        printf("\nError: '%s' undeclared.", get_lexeme());
+	toktyp getting_assigned, assignee;
+	if(find_name(get_lexeme())){
+		getting_assigned = get_ntype(get_lexeme());
+	}
+    if (!find_name(get_lexeme()) && !lex2tok("number")) {
+        printf("SEMANTIC: ID not declared: %s\n", get_lexeme());
+		getting_assigned = undef;
         is_parse_ok = 0;
     }
 	match(id);
 	match(assign);
-	expr();
+	assignee = expr();
+	if(getting_assigned != assignee){
+		if(!((strcmp((tok2lex(getting_assigned)), "error") == 0 && strcmp((tok2lex(assignee)),"error")) == 0)) {
+			printf("SEMANTIC: Assign types: %s := %s\n", tok2lex(getting_assigned), tok2lex(assignee));
+			is_parse_ok = 0;
+		}
+	}
 	out("assign stat");
 }
 
-static void expr(){
-    in("expr");
-	term();
+static toktyp expr(){
+	in("expr");
+	toktyp A = term();
 	if(lookahead == '+'){
 		match('+');
-		expr();
+		return get_otype('+', expr(), A);
 	}
+	return A;
     out("expr");
 }
 
-static void term(){
+static toktyp term(){
     in("term");
-	factor();
+	toktyp term_tok = factor();
 	if(lookahead == '*'){
 		match ('*');
-		factor();
+		return get_otype('*', (term()), (term_tok));
 	}
     out("term");
+	return term_tok;
 }
 
-static void factor(){
+static toktyp factor(){
+	toktyp fact;
 	in("factor");
 	if(lookahead == '('){
 		match('(');
-		expr();
+		fact = expr();
 		match(')');
 	}
 	else{
-		operand();
+		fact = operand();
 	}
 	out("factor");
+	return fact;
 }
 
-static void operand(){
-    in("operand");
-	if(lookahead == id) match(id);
-	if(lookahead == number) match(number);
+static toktyp operand(){
+    toktyp oper;
+	in("operand");
+	if(lookahead == id) {
+		if (!find_name(get_lexeme())) {
+			printf("\nSEMANTIC: ID not declared: %s\n", get_lexeme());
+			is_parse_ok = 0;
+			oper = undef;
+		}
+		oper = get_ntype(get_lexeme());
+		match(id);
+	}
+	else if(lookahead == number) {match(number); return integer;}
+	else {
+		oper = error;
+		is_parse_ok = 0;
+		printf("SYNTAX:   Operand expected\n");
+	}
     out("operand");
+	return oper;
 }
 
-
+static void leftinbuf(){
+	is_parse_ok = 0;
+	printf("SYNTAX:	Extra symbols after end of parse!\n");
+    while (lookahead != '$') {
+        printf("%s ", get_lexeme());
+        match(lookahead);
+    }
+    printf("\n");
+}
 /**********************************************************************/
 /* End of code                                                        */
 /**********************************************************************/
