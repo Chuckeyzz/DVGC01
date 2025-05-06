@@ -92,13 +92,30 @@
 (format t "Symbol: ~S ~%" lexeme)
    (list (cond
          ((string=   lexeme "program")  'PROGRAM)
-         ((string=   lexeme "var")      'VAR)
-
-;; etc,  *** TO BE DONE ***
-
-         ((string=   lexeme "")	        'EOF)
-         ((is-id     lexeme)            'ID)
-         ((is-number lexeme)            'NUM)
+         ((string=   lexeme "var")      	'VAR)
+		 ((string=   lexeme "input")      'INPUT)
+		 ((string=   lexeme "output")    'OUTPUT)
+		 ((string=   lexeme "begin")      'BEGIN) 
+		 ((string=   lexeme "end")      	'END)
+		 ((string=   lexeme "boolean")  'BOOLEAN)
+		 ((string=   lexeme "integer")  'INTEGER)
+		 ((string=   lexeme "real")		   'REAL)
+		 ((string=   lexeme "(")     		 'LP)
+		 ((string=   lexeme ")")      		 'RP)
+		 ((string=   lexeme "$")    	 'DOLLAR)
+		 ((string=   lexeme "=")      'EQUALSIGN)
+		 ((string=   lexeme "*")     	   'MULT)
+		 ((string=   lexeme "+")      	   'PLUS)
+		 ((string=   lexeme ",")      	  'COMMA)
+		 ((string=   lexeme "/")   		  'SLASH)
+		 ((string=   lexeme "-")   		  'MINUS)
+		 ((string=   lexeme "-")  		    'DOT)
+		 ((string=   lexeme ":")      	  'COLON)
+		 ((string=   lexeme ";")      'SEMICOLON) 
+		 ((string=   lexeme ":=")     	 'ASSIGN)
+         ((string=   lexeme "")	        	'EOF)
+         ((is-id     lexeme)           		 'ID)
+         ((is-number lexeme)         		'NUM)
          (t                             'UNKNOWN)
          )
     lexeme)
@@ -162,9 +179,11 @@
 ; lexeme - returns the lexeme from (token lexeme)(reader)
 ;;=====================================================================
 
-(defun token  (state) ;; *** TO BE DONE ***
+(defun token  (state) ;;returns the token type from lookahead list
+	(first  (pstate-lookahead state))
 )
-(defun lexeme (state) ;; *** TO BE DONE ***
+(defun lexeme (state) ;;returns original string from lookahead list
+	(second (pstate-lookahead state))
 )
 
 ;;=====================================================================
@@ -257,8 +276,93 @@
 ; <operand>       --> id | number
 ;;=====================================================================
 
-;; *** TO BE DONE ***
+(defun statpart (state)
+	(match state 'BEGIN)										;;match begin
+	(statlist state) 											;;call stat-list
+	(match state 'END)											;;match (end)
+	(match state 'DOT)											;;match (.) 
+)
 
+(defun statlist (state)
+	(stat state) 			;;call stat 
+	(if(EQ (first (pstate-lookahead state)) 'SEMICOLON)			;;if(lookahead == ';')															
+		(progn
+			(match state 'SEMICOLON)
+			(statlist state)									;;recursive call to statlist
+			)
+	;;else
+		nil)	
+)
+
+(defun stat (state)
+	(assignstat state) 											;;call assignstat 
+)
+
+(defun assignstat (state)
+	(if(EQ (first (pstate-lookahead state)) 'ID) 				;;if lookahead == id;
+		(progn
+			(let ((name (lexeme state)))
+				(unless (symtab-member state name)				;;semantic check if not declared
+				(semerr2 state))								;throw error 2 and parse fails
+			)								
+			(match state 'ID)		
+			(if (EQ (first(pstate-lookahead state)) 'ASSIGN)	;if lookahead == assign
+				(progn											
+					(match state 'ASSIGN)						;match assign, should work automatically.
+					(expr state))								;go to expression
+					(synerr1 state 'ASSIGN)))					;else throw assign error
+		;else if not ID			
+		(synerr3 state)))										;;if not id throw error 3					
+
+
+(defun expr (state)
+	
+	(term state)
+	(if(EQ (first (pstate-lookahead state)) 'PLUS) 				;;if(lookahead == '+'){
+		(progn(match state))  									;;match('+')
+		(prog1 else
+			(A)
+		)
+		
+		;;return geto_type('+', expr(), A);
+	;;}
+	)
+	;;return A;
+)
+
+(defun term (state)
+	;;term_tok = factor();
+	(if(EQ (first (pstate-lookahead state)) 'MULT) 	;if(lookahead == '*'){
+		(match state)
+		;;return geto_type('*',term(), term_tok);
+	;;}
+	;;return term_tok
+	
+))
+
+(setf x 2)
+(if test
+	((+ x 3) (+ x 5))
+	(- x 2)
+)
+
+(defun factor (state)
+	;;toktyp fact;
+	(if(EQ (first (pstate-lookahead state)) 'LP)		;;if(lookahead == '(' )
+		(match state)										;;match('(')
+		;;fact = expr();
+		(match state)										;;match(')')
+	;;else{
+	;;	fact = operand();
+	;;}
+	;;out("factor");
+;;	return fact;
+	)
+)
+
+(defun operand (state)
+	form*
+)
 ;;=====================================================================
 ; <var-part>     --> var <var-dec-list>
 ; <var-dec-list> --> <var-dec> | <var-dec><var-dec-list>
