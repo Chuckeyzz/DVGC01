@@ -125,13 +125,24 @@
 ; ID is [A-Z,a-z][A-Z,a-z,0-9]*          number is [0-9][0-9]*
 ;;=====================================================================
 
-(defun is-id (str)
-;; *** TO BE DONE ***
+;;The "and" macro takes a set of arguments and evaluates them left to right, like boolean algebra. If one argument returns nil:
+;;the entire and-macro returns nil.
+
+(defun is-id (str)												
+	(and  														
+		(> (length str) 0)										;;prevents the "every"-function from accepting an empty string as ID
+		(alpha-char-p (char str 0))								;;if first element is alpha, return true
+		(every #'alphanumericp str)								;;if all elements are aplhanumeric, return true
+	)
 )
 
 (defun is-number (str)
-;; *** TO BE DONE ***
+	(and 
+		(> (length str) 0)										;;prevents the "every"-function from accepting an empty string as number
+		(every #'digit-char-p str)								;;if all elements are digits, return true
+	)
 )
+
 
 ;;=====================================================================
 ; THIS IS THE PARSER PART
@@ -180,7 +191,7 @@
 ;;=====================================================================
 
 (defun token  (state) ;;returns the token type from lookahead list
-	(first  (pstate-lookahead state))
+	(first (pstate-lookahead state))
 )
 (defun lexeme (state) ;;returns original string from lookahead list
 	(second (pstate-lookahead state))
@@ -316,53 +327,46 @@
 
 
 (defun expr (state)
-	
 	(term state)
 	(if(EQ (first (pstate-lookahead state)) 'PLUS) 				;;if(lookahead == '+'){
-		(progn(match state))  									;;match('+')
-		(prog1 else
-			(A)
+		(progn
+			(match state 'PLUS)
 		)
-		
-		;;return geto_type('+', expr(), A);
-	;;}
-	)
-	;;return A;
-)
+	
+	))
 
 (defun term (state)
-	;;term_tok = factor();
-	(if(EQ (first (pstate-lookahead state)) 'MULT) 	;if(lookahead == '*'){
-		(match state)
-		;;return geto_type('*',term(), term_tok);
-	;;}
-	;;return term_tok
-	
-))
-
-(setf x 2)
-(if test
-	((+ x 3) (+ x 5))
-	(- x 2)
+	(factor state)
+	(if(EQ (first (pstate-lookahead state)) 'MULT) 				;if(lookahead == '*'){
+		(match state 'MULT)										;;match(*)
+	)
 )
 
 (defun factor (state)
-	;;toktyp fact;
-	(if(EQ (first (pstate-lookahead state)) 'LP)		;;if(lookahead == '(' )
-		(match state)										;;match('(')
-		;;fact = expr();
-		(match state)										;;match(')')
-	;;else{
-	;;	fact = operand();
-	;;}
-	;;out("factor");
-;;	return fact;
+	(if(EQ (first (pstate-lookahead state)) 'LP)				;;if(lookahead == '(' )
+		(progn
+			(match state 'LP) 									;;match('(')
+			(expr state)		 								;;expr()
+			(match state 'RP)									;;match(')')
+		)
+		(operand state)
 	)
 )
 
 (defun operand (state)
-	form*
-)
+	cond(	
+		((EQ (first (pstate-lookahead state)) 'ID) 				;;if(lookahead == id)
+			(match state 'ID)										;;match(id)
+		)
+		((EQ (first (pstate-lookahead state)) 'NUM) 			;;else if(lookahead == number)
+			(match state 'NUM)										;;match(number)
+		)
+		(t
+			(synerr3 state)										;;else error
+		)
+	)
+)	
+	
 ;;=====================================================================
 ; <var-part>     --> var <var-dec-list>
 ; <var-dec-list> --> <var-dec> | <var-dec><var-dec-list>
