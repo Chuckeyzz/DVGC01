@@ -109,7 +109,7 @@
 		 ((string=   lexeme ",")      	  'COMMA)
 		 ((string=   lexeme "/")   		  'SLASH)
 		 ((string=   lexeme "-")   		  'MINUS)
-		 ((string=   lexeme "-")  		    'DOT)
+		 ((string=   lexeme ".")  		    'DOT)
 		 ((string=   lexeme ":")      	  'COLON)
 		 ((string=   lexeme ";")      'SEMICOLON) 
 		 ((string=   lexeme ":=")     	 'ASSIGN)
@@ -202,11 +202,16 @@
 ;;=====================================================================
 
 (defun symtab-add (state id)
-;; *** TO BE DONE ***
+	(if (symtab-member state id)								;if id is already in symtab
+		(semerr1 state)											;throw error
+		(setf(pstate-symtab state) (append(pstate-symtab state) (list id)))				;else, make a list with id in it and push to symtab
+	)
 )
 
+
 (defun symtab-member (state id)
-;; *** TO BE DONE ***
+	(find id (pstate-symtab state)								;look for id in symtab
+		:test #'string=)										;compare the string value of id to symtab elements
 )
 
 (defun symtab-display (state)
@@ -287,7 +292,7 @@
 ; <operand>       --> id | number
 ;;=====================================================================
 
-(defun statpart (state)
+(defun stat-part (state)
 	(match state 'BEGIN)										;;match begin
 	(statlist state) 											;;call stat-list
 	(match state 'END)											;;match (end)
@@ -308,15 +313,16 @@
 (defun stat (state)
 	(assignstat state) 											;;call assignstat 
 )
-
 (defun assignstat (state)
 	(if(EQ (first (pstate-lookahead state)) 'ID) 				;;if lookahead == id;
 		(progn
 			(let ((name (lexeme state)))
-				(unless (symtab-member state name)				;;semantic check if not declared
-				(semerr2 state))								;throw error 2 and parse fails
-			)								
-			(match state 'ID)		
+				;(unless (symtab-member state name)				;;semantic check if not declared
+				;(semerr2 state))								;throw error 2 and parse fails
+			)				
+
+			(match state 'ID)
+					
 			(if (EQ (first(pstate-lookahead state)) 'ASSIGN)	;if lookahead == assign
 				(progn											
 					(match state 'ASSIGN)						;match assign, should work automatically.
@@ -331,14 +337,19 @@
 	(if(EQ (first (pstate-lookahead state)) 'PLUS) 				;;if(lookahead == '+'){
 		(progn
 			(match state 'PLUS)
+			(expr state)
 		)
-	
-	))
+	)
+)
 
 (defun term (state)
 	(factor state)
 	(if(EQ (first (pstate-lookahead state)) 'MULT) 				;if(lookahead == '*'){
-		(match state 'MULT)										;;match(*)
+		(progn 
+			(match state 'MULT)										;;match(*)
+			(term state)
+		)
+		nil
 	)
 )
 
@@ -354,7 +365,7 @@
 )
 
 (defun operand (state)
-	cond(	
+	(cond	
 		((EQ (first (pstate-lookahead state)) 'ID) 				;;if(lookahead == id)
 			(match state 'ID)										;;match(id)
 		)
@@ -365,7 +376,7 @@
 			(synerr3 state)										;;else error
 		)
 	)
-)	
+)
 	
 ;;=====================================================================
 ; <var-part>     --> var <var-dec-list>
@@ -375,13 +386,66 @@
 ; <type>         --> integer | real | boolean
 ;;=====================================================================
 
-;; *** TO BE DONE ***
+(defun var-part (state)
+	(match state 'VAR)
+	(vardeclist state)
+)
+(defun vardeclist (state)
+	(vardec state)
+	(if(EQ (first (pstate-lookahead state)) 'ID)
+		(progn
+			(vardec state)
+			(vardeclist state)
+		)
+	)
+)
+(defun vardec (state)
+	(idlist state)
+	(match state 'COLON)
+	(typo state)
+	(match state 'SEMICOLON)
+)
+
+(defun idlist (state)
+	(let ((name (lexeme state)))
+		(match state 'ID)
+		(symtab-add state name)
+		)
+	(if(EQ (first (pstate-lookahead state)) 'COMMA)
+		(progn 
+			(match state 'COMMA)
+			(idlist state)
+		)
+	)
+)
+
+(defun typo (state)
+	(cond 
+		((EQ (first (pstate-lookahead state)) 'INTEGER)  
+			(match state 'INTEGER))
+		((EQ (first (pstate-lookahead state)) 'BOOLEAN)
+			(match state 'BOOLEAN))
+		((EQ (first (pstate-lookahead state)) 'REAL) 
+			(match state 'REAL))
+		(t
+		 	(synerr2 state))
+	)
+)
 
 ;;=====================================================================
 ; <program-header>
 ;;=====================================================================
 
-;; *** TO BE DONE ***
+(defun program-header (state)
+	(match state 'PROGRAM)
+	(match state 'ID)
+	(match state 'LP)
+	(match state 'INPUT)
+	(match state 'COMMA)
+	(match state 'OUTPUT)
+	(match state 'RP)
+	(match state 'SEMICOLON)
+)
 
 ;;=====================================================================
 ; <program> --> <program-header><var-part><stat-part>
