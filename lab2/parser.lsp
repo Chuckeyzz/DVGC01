@@ -472,8 +472,8 @@
    (program-header state)
    (var-part       state)
    (stat-part      state)
-   (symtab-display state)
    (check-leftover state)
+   (symtab-display state)
 )
 
 ;;=====================================================================
@@ -516,6 +516,7 @@
 (defun parse-all ()
 	(dribble "testall.out")
 	(mapcar #'parse '(
+
 		"testfiles/testa.pas" "testfiles/testb.pas" "testfiles/testc.pas"
 		"testfiles/testd.pas" "testfiles/teste.pas" "testfiles/testf.pas"
 		"testfiles/testg.pas" "testfiles/testh.pas" "testfiles/testi.pas"
@@ -526,13 +527,6 @@
 		"testfiles/testv.pas" "testfiles/testw.pas" "testfiles/testx.pas"
 		"testfiles/testy.pas" "testfiles/testz.pas"
 
-)
-	)
-	(dribble)
-)
-
-#| 
-
 		"testfiles/testok1.pas" "testfiles/testok2.pas" "testfiles/testok3.pas"
 		"testfiles/testok4.pas" "testfiles/testok5.pas" "testfiles/testok6.pas"
 		"testfiles/testok7.pas"
@@ -541,7 +535,14 @@
 		"testfiles/fun4.pas" "testfiles/fun5.pas"
 
 		"testfiles/sem1.pas" "testfiles/sem2.pas" "testfiles/sem3.pas"
-		"testfiles/sem4.pas" "testfiles/sem5.pas"|# 
+		"testfiles/sem4.pas" "testfiles/sem5.pas"
+)
+	)
+	(dribble)
+)
+
+#| 
+		|# 
 
 ;;=====================================================================
 ; THE PARSER - test all files
