@@ -108,9 +108,9 @@
 		 ((string=   lexeme ",")      	  'COMMA)
 		 ((string=   lexeme "/")   		  'SLASH)
 		 ((string=   lexeme "-")   		  'MINUS)
-		 ((string=   lexeme ".")  		    'DOT)
+		 ((string=   lexeme ".")  		  'FSTOP)
 		 ((string=   lexeme ":")      	  'COLON)
-		 ((string=   lexeme ";")      'SEMICOLON) 
+		 ((string=   lexeme ";")      	 'SCOLON) 
 		 ((string=   lexeme ":=")     	 'ASSIGN)
          ((string=   lexeme "")	        	'EOF)
          ((is-id     lexeme)           		 'ID)
@@ -252,6 +252,11 @@
           (lexeme state))
     (setf (pstate-status state) 'NOTOK)
 )
+(defun semerr3 (state)
+    (format t "*** Semantic error: found ~8S expected EOF.~%"
+          (lexeme state))
+    (setf (pstate-status state) 'NOTOK)
+)
 
 ;;=====================================================================
 ; The return value from get-token is always a list. (token lexeme)
@@ -295,14 +300,14 @@
 	(match state 'BEGIN)										;;match begin
 	(statlist state) 											;;call stat-list
 	(match state 'END)											;;match (end)
-	(match state 'DOT)											;;match (.) 
+	(match state 'FSTOP)										;;match (.) 
 )
 
 (defun statlist (state)
 	(stat state) 												;;call stat 
-	(if(EQ (first (pstate-lookahead state)) 'SEMICOLON)			;;if(lookahead == ';')															
+	(if(EQ (first (pstate-lookahead state)) 'SCOLON)			;;if(lookahead == ';')															
 		(progn
-			(match state 'SEMICOLON)
+			(match state 'SCOLON)
 			(statlist state)									;;recursive call to statlist
 			)
 	;;else
@@ -398,7 +403,7 @@
 	(idlist state)
 	(match state 'COLON)
 	(typo state)
-	(match state 'SEMICOLON)
+	(match state 'SCOLON)
 )
 
 (defun idlist (state)
@@ -434,19 +439,30 @@
 	)
 )
 
+(defun check-leftover (state)
+	(unless (EQ (first (pstate-lookahead state)) 'EOF) 
+		(progn
+			(semerr3 state)
+			(match state (token state))
+			(check-leftover state)
+		)
+	)
+	
+)
+
 ;;=====================================================================
 ; <program-header>
 ;;=====================================================================
 
 (defun program-header (state)
-	(match state 'PROGRAM)
-	(match state 'ID)
-	(match state 'LP)
-	(match state 'INPUT)
-	(match state 'COMMA)
-	(match state 'OUTPUT)
-	(match state 'RP)
-	(match state 'SEMICOLON)
+	(match state	'PROGRAM)
+	(match state		 'ID)
+	(match state 		 'LP)
+	(match state  	  'INPUT)
+	(match state 	  'COMMA)
+	(match state 	 'OUTPUT)
+	(match state 	     'RP)
+	(match state  	 'SCOLON)
 )
 
 ;;=====================================================================
@@ -457,6 +473,7 @@
    (var-part       state)
    (stat-part      state)
    (symtab-display state)
+   (check-leftover state)
 )
 
 ;;=====================================================================
