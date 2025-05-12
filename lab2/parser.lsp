@@ -103,7 +103,6 @@
 		 ((string=   lexeme "(")     		 'LP)
 		 ((string=   lexeme ")")      		 'RP)
 		 ((string=   lexeme "$")    	 'DOLLAR)
-		 ((string=   lexeme "=")      'EQUALSIGN)
 		 ((string=   lexeme "*")     	   'MULT)
 		 ((string=   lexeme "+")      	   'PLUS)
 		 ((string=   lexeme ",")      	  'COMMA)
@@ -190,10 +189,10 @@
 ; lexeme - returns the lexeme from (token lexeme)(reader)
 ;;=====================================================================
 
-(defun token  (state) ;;returns the token type from lookahead list
+(defun token  (state) 											;;returns the token type from lookahead list
 	(first (pstate-lookahead state))
 )
-(defun lexeme (state) ;;returns original string from lookahead list
+(defun lexeme (state) 											;;returns original string from lookahead list
 	(second (pstate-lookahead state))
 )
 
@@ -300,7 +299,7 @@
 )
 
 (defun statlist (state)
-	(stat state) 			;;call stat 
+	(stat state) 												;;call stat 
 	(if(EQ (first (pstate-lookahead state)) 'SEMICOLON)			;;if(lookahead == ';')															
 		(progn
 			(match state 'SEMICOLON)
@@ -314,22 +313,13 @@
 	(assignstat state) 											;;call assignstat 
 )
 (defun assignstat (state)
-	(if(EQ (first (pstate-lookahead state)) 'ID) 				;;if lookahead == id;
-		(progn
-			(let ((name (lexeme state)))
-				;(unless (symtab-member state name)				;;semantic check if not declared
-				;(semerr2 state))								;throw error 2 and parse fails
-			)				
-
-			(match state 'ID)
-					
-			(if (EQ (first(pstate-lookahead state)) 'ASSIGN)	;if lookahead == assign
-				(progn											
-					(match state 'ASSIGN)						;match assign, should work automatically.
-					(expr state))								;go to expression
-					(synerr1 state 'ASSIGN)))					;else throw assign error
-		;else if not ID			
-		(synerr3 state)))										;;if not id throw error 3					
+	(if (and (not (symtab-member state (lexeme state)) ) (eq (token state) 'ID)) 
+		(semerr2 state) 
+	)
+	(match state 'ID)
+	(match state 'ASSIGN)
+	(expr state)
+)														
 
 
 (defun expr (state)
@@ -346,7 +336,7 @@
 	(factor state)
 	(if(EQ (first (pstate-lookahead state)) 'MULT) 				;if(lookahead == '*'){
 		(progn 
-			(match state 'MULT)										;;match(*)
+			(match state 'MULT)									;;match(*)
 			(term state)
 		)
 		nil
@@ -367,10 +357,18 @@
 (defun operand (state)
 	(cond	
 		((EQ (first (pstate-lookahead state)) 'ID) 				;;if(lookahead == id)
-			(match state 'ID)										;;match(id)
+			(let ((name (lexeme state)))
+				(if (symtab-member state name)					;;check if variable already declared
+					(match state 'ID)
+					(progn
+						(semerr2 state)
+						(match state 'ID)
+					)													
+				)
+			)
 		)
 		((EQ (first (pstate-lookahead state)) 'NUM) 			;;else if(lookahead == number)
-			(match state 'NUM)										;;match(number)
+			(match state 'NUM)									;;match(number)
 		)
 		(t
 			(synerr3 state)										;;else error
@@ -393,10 +391,7 @@
 (defun vardeclist (state)
 	(vardec state)
 	(if(EQ (first (pstate-lookahead state)) 'ID)
-		(progn
-			(vardec state)
-			(vardeclist state)
-		)
+		(vardeclist state)
 	)
 )
 (defun vardec (state)
@@ -407,10 +402,17 @@
 )
 
 (defun idlist (state)
-	(let ((name (lexeme state)))
-		(match state 'ID)
-		(symtab-add state name)
+	(if(EQ (first (pstate-lookahead state)) 'ID)
+		(progn 
+			(let ((name (lexeme state)))
+				(if (symtab-member state name)				;;check if variable already declared
+					(semerr1 state)							;;if already declared we throw sem-error
+					(symtab-add state name)					;;else add it ti
+				)
+			)
 		)
+	)
+	(match state 'ID)
 	(if(EQ (first (pstate-lookahead state)) 'COMMA)
 		(progn 
 			(match state 'COMMA)
@@ -487,9 +489,12 @@
 ;;=====================================================================
 
 (defun parse-all ()
-
-;; *** TO BE DONE ***
-
+	(dribble "testall.out")
+	(mapcar #'parse '(
+		"testfiles/sem1.pas" "testfiles/sem2.pas" "testfiles/sem3.pas"
+		"testfiles/sem4.pas" "testfiles/sem5.pas")
+	)
+	(dribble)
 )
 
 ;;=====================================================================
