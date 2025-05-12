@@ -488,14 +488,43 @@
 ; THE PARSER - parse all the test files
 ;;=====================================================================
 
+;;FAILING ON THE FOLLOWING TESTS:
+
+;;TEST A -> EXPECTED FSTOP. OUR OUTPUT IS EXPECTED DOT
+;;TEST R -> CHECK LOGS
+;;TEST S -> NEED TO PRINT LEFTOVERS PROBABLY?
+;;TEST V -> EXPECTED FSTOP. OUR OUTPUT IS EXPECTED DOT
+;;TEST Z -> EXPECTED FSTOP. OUR OUTPUT IS EXPECTED DOT
+
 (defun parse-all ()
 	(dribble "testall.out")
 	(mapcar #'parse '(
-		"testfiles/sem1.pas" "testfiles/sem2.pas" "testfiles/sem3.pas"
-		"testfiles/sem4.pas" "testfiles/sem5.pas")
+		"testfiles/testa.pas" "testfiles/testb.pas" "testfiles/testc.pas"
+		"testfiles/testd.pas" "testfiles/teste.pas" "testfiles/testf.pas"
+		"testfiles/testg.pas" "testfiles/testh.pas" "testfiles/testi.pas"
+		"testfiles/testj.pas" "testfiles/testk.pas" "testfiles/testl.pas"
+		"testfiles/testm.pas" "testfiles/testn.pas" "testfiles/testo.pas"
+		"testfiles/testp.pas" "testfiles/testq.pas" "testfiles/testr.pas"
+		"testfiles/tests.pas" "testfiles/testt.pas" "testfiles/testu.pas"
+		"testfiles/testv.pas" "testfiles/testw.pas" "testfiles/testx.pas"
+		"testfiles/testy.pas" "testfiles/testz.pas"
+
+)
 	)
 	(dribble)
 )
+
+#| 
+
+		"testfiles/testok1.pas" "testfiles/testok2.pas" "testfiles/testok3.pas"
+		"testfiles/testok4.pas" "testfiles/testok5.pas" "testfiles/testok6.pas"
+		"testfiles/testok7.pas"
+		
+		"testfiles/fun1.pas" "testfiles/fun2.pas" "testfiles/fun3.pas"
+		"testfiles/fun4.pas" "testfiles/fun5.pas"
+
+		"testfiles/sem1.pas" "testfiles/sem2.pas" "testfiles/sem3.pas"
+		"testfiles/sem4.pas" "testfiles/sem5.pas"|# 
 
 ;;=====================================================================
 ; THE PARSER - test all files
@@ -512,3 +541,6 @@
 ;;=====================================================================
 ; THE PARSER - end of code
 ;;=====================================================================
+
+
+		
