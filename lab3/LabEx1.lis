@@ -1,0 +1,40 @@
+
+prog_head([program|A], H) :-
+	id(A, B),
+	B=['('|C],
+	C=[input|D],
+	D=[','|E],
+	E=[output|F],
+	F=[')'|G],
+	G=[;|H].
+
+testpr :-
+	program([program, c, '(', input, ',', output, ')', ;], []).
+
+program(A, D) :-
+	prog_head(A, B),
+	var_part(B, C),
+	stat_part(C, D).
+
+stat_part(A, B) :-
+	stat_part_todo(A, B).
+
+var_part(A, B) :-
+	var_part_todo(A, B).
+
+var_part_todo(_, _) :-
+	write('var_part:  To Be Done'),
+	nl.
+
+id(A, B) :-
+	(   A=[a|B]
+	;   A=[b|B]
+	;   A=[c|B]
+	).
+
+testph :-
+	prog_head([program, c, '(', input, ',', output, ')', ;], []).
+
+stat_part_todo(_, _) :-
+	write('stat_part: To Be Done'),
+	nl.
