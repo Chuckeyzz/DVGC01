@@ -19,6 +19,7 @@ program       --> prog_head, var_part, stat_part.
 /******************************************************************************/
 prog_head     --> [program], id, ['('], [input], [','], [output], [')'], [';'].
 id            --> [a]|[b]|[c].
+number		  --> []. %is digit here
 
 
 /******************************************************************************/
@@ -27,7 +28,7 @@ id            --> [a]|[b]|[c].
 var_part			--> [var], var_dec.
 var_dec_list		--> var_dec | var_dec, var_dec_list.
 var_dec				--> id_list : [type].
-id_list				--> [id] | id_list, [id].
+id_list				--> id | id_list, id.
 type				--> [integer] | [real] | [boolean].
 
 /******************************************************************************/
@@ -36,11 +37,11 @@ type				--> [integer] | [real] | [boolean].
 stat_part			--> [begin], stat_list, [end].
 stat_list			--> stat | stat_list ; stat.
 stat				--> assign_stat.
-assign_stat			--> [id], [assign], expr.
-expr				--> term | expr, [+], term.
-term				--> factor | term, [*], factor.
+assign_stat			--> id, [':='], expr.
+expr				--> term | expr, ['+'], term.
+term				--> factor | term, ['*'], factor.
 factor				--> expr | operand.
-operand 			--> [id] | [number].
+operand 			--> id | number.
 
 
 /******************************************************************************/
