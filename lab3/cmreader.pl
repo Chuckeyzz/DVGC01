@@ -1,4 +1,7 @@
 /******************************************************************************/
+/* Per Emilsson & Kenny Pettersson											  */
+/******************************************************************************/
+/******************************************************************************/
 /* From Programming in Prolog (4th Ed.) Clocksin & Mellish, Springer (1994)   */
 /* Chapter 5, pp 101-103 (DFR (140421) modified for input from a file)        */
 /******************************************************************************/
@@ -19,7 +22,7 @@ restsent(_, C, [W1 | Ws ]) :- readword(C, W1, C1), restsent(W1, C1, Ws).
 /* and remembering what character came after the word (NB!)                   */
 /******************************************************************************/
 
-readword(C, W, _)  :- C = -1, W = C.                    /* added EOF handling */
+readword(C, W, _)  :- C = -1, W = C.                    						/* added EOF handling */
 
 readword(C, W, C2) :- C = 58, get0(C1), checkforassign(C, C1, C2, W), get0(C1). %handling assign
 
@@ -58,6 +61,11 @@ single_character(59).                  /* ; */
 single_character(58).                  /* : */
 single_character(61).                  /* = */
 single_character(46).                  /* . */
+
+/******************************************************************************/
+/* Keywords									                                  */
+/******************************************************************************/
+
 
 /******************************************************************************/
 /* These characters can appear within a word.                                 */

@@ -2,6 +2,10 @@
 /* Per Emilsson & Kenny Pettersson		                                      */
 /******************************************************************************/
 
+%Telling prolog that we know that we have multiple instances of program, id and number.
+:- discontiguous program/2.
+
+
 /******************************************************************************/
 /* Prolog Lab 2 example - Grammar test bed                                    */
 /******************************************************************************/
@@ -18,17 +22,21 @@ program       --> prog_head, var_part, stat_part.
 /* Program Header                                                             */
 /******************************************************************************/
 prog_head     --> [program], id, ['('], [input], [','], [output], [')'], [';'].
-id            --> [a]|[b]|[c].
-number		  --> []. %is digit here
-
+id            --> [Name], {															%Copies entire id into a variable called name
+					atom(Name),														%check that the name is an atom e.g.(xyz)
+					atom_codes(Name, [First|Rest]),									%Split the atom into list => [x, y, z]
+					char_type(First, alpha),										%Checks that the head of the list is alpha
+					forall(member(C, Rest), char_type(C, alnum))					%Checks the rest of the list to make sure its alphanumeric
+				  }.
+number		  --> []. %TBD
 
 /******************************************************************************/
 /* Var_part                                                                   */
 /******************************************************************************/
 var_part			--> [var], var_dec.
 var_dec_list		--> var_dec | var_dec, var_dec_list.
-var_dec				--> id_list : [type].
-id_list				--> id | id_list, id.
+var_dec				--> id_list, [':'], type, [';'].
+id_list				--> id | id, [','], id_list.
 type				--> [integer] | [real] | [boolean].
 
 /******************************************************************************/
@@ -40,7 +48,7 @@ stat				--> assign_stat.
 assign_stat			--> id, [':='], expr.
 expr				--> term | expr, ['+'], term.
 term				--> factor | term, ['*'], factor.
-factor				--> expr | operand.
+factor				--> ['('], expr, [')'] | operand.
 operand 			--> id | number.
 
 
@@ -89,7 +97,7 @@ operand 			--> id | number.
 /* var_dec([a, ':', integer], []).                                            */
 /* var_dec_list([a, ':', integer], []).                                       */
 /* var_dec_list([a, ':', integer, b, ':', real], []).                         */
-/* var_part([var, a, ':', integer], []).                                      */
+                                      
 /******************************************************************************/
 /* Program header                                                             */
 /******************************************************************************/
@@ -113,7 +121,12 @@ operand 			--> id | number.
 /******************************************************************************/
 
 testph :- prog_head([program, c, '(', input, ',', output, ')', ';'], []).
-testpr :-   program([program, c, '(', input, ',', output, ')', ';'], []).
+testpr :-  var_part([var, a, ':', integer], []).
+
+/******************************************************************************/
+/* Helper-predicates	                                                      */
+/******************************************************************************/
+
 
 /******************************************************************************/
 /* End of program                                                             */
