@@ -2,10 +2,6 @@
 /* Per Emilsson & Kenny Pettersson		                                      */
 /******************************************************************************/
 
-%Telling prolog that we know that we have multiple instances of program, id and number.
-:- discontiguous program/2.
-
-
 /******************************************************************************/
 /* Prolog Lab 2 example - Grammar test bed                                    */
 /******************************************************************************/
@@ -59,14 +55,17 @@ operand 			--> id | number.
 /******************************************************************************/
 /* Stat part                                                                  */
 /******************************************************************************/
-/*  op(['+'], []).                                                            */
-/*  op(['-'], []).                                                            */
-/*  op(['*'], []).                                                            */
-/*  op(['/'], []).                                                            */
+                                                            
+                                                              
+                                                              
+	%unsure if we need these tests
 /*  addop(['+'], []).                                                         */
 /*  addop(['-'], []).                                                         */
 /*  mulop(['*'], []).                                                         */
 /*  mulop(['/'], []).                                                         */
+
+
+
 /*  factor([a], []).                                                          */
 /*  factor(['(', a, ')'], []).                                                */
 /*  term([a], []).                                                            */
@@ -81,23 +80,11 @@ operand 			--> id | number.
 /*  stat_list([a, assign, b, '*', c], []).                                    */
 /*  stat_list([a, assign, b, ';', a, assign, c], []).                         */
 /*  stat_list([a, assign, b, '*', c, ';', a, assign, b, '*', c], []).         */
-/*  stat_part([begin, a, assign, b, '*', c, end, '.'], []).                   */
+/*                     */
 /******************************************************************************/
 /* Var part                                                                   */
 /******************************************************************************/
-/* typ([integer], []).                                                        */
-/* typ([real], []).                                                           */
-/* typ([boolean], []).                                                        */
-/* id([a], []).                                                               */
-/* id([b], []).                                                               */
-/* id([c], []).                                                               */
-/* id_list([a], []).                                                          */
-/* id_list([a, ',', b], []).                                                  */
-/* id_list([a, ',', b, ',', c], []).                                          */
-/* var_dec([a, ':', integer], []).                                            */
-/* var_dec_list([a, ':', integer], []).                                       */
-/* var_dec_list([a, ':', integer, b, ':', real], []).                         */
-                                      
+
 /******************************************************************************/
 /* Program header                                                             */
 /******************************************************************************/
@@ -120,8 +107,37 @@ operand 			--> id | number.
 /* Define the above tests                                                     */
 /******************************************************************************/
 
-testph :- prog_head([program, c, '(', input, ',', output, ')', ';'], []).
-testpr :-  var_part([var, a, ':', integer], []).
+testph 		:- prog_head([program, c, '(', input, ',', output, ')', ';'], []).
+testpr 		:- var_part([var, a, ':', integer], []).
+
+/******************************************************************************/
+/* Home-brewed tests	                                                      */
+/******************************************************************************/
+teststatp	:- stat_part([begin, a, assign, b, '*', c, end, '.'], []).
+
+/*teststatl	:-[].
+teststatl1	:-[].
+teststatl2	:-[].
+teststatl3	:-[].*/
+/******************************************************************************/
+/* Cleared tests are placed under this line									  */
+/******************************************************************************/
+
+%vardec tests were changed because teachers did not include semicolons
+testvdl 	:- var_dec_list([a, ':', integer, ';', b, ':', real, ';'], []).
+testvdl1	:- var_dec_list([a, ':', integer, ';'], []). 
+testvd 		:- var_dec([a, ':', integer, ';'], []).
+
+testid 		:- id([c], []).  
+testid1 	:- id([b], []).
+testid2 	:- id([c], []).   
+testid3 	:- id([xyz], []).
+testid4 	:- id([xyz1234asx4as4as4as44as], []).
+testid5 	:- id([xyz-123], []).
+
+testtype 	:- type([boolean], []).
+testtype1 	:- type([real], []).
+testtype2 	:- type([integer], []). 
 
 /******************************************************************************/
 /* Helper-predicates	                                                      */
