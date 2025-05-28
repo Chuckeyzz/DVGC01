@@ -1,7 +1,10 @@
 /******************************************************************************/
 /* Per Emilsson & Kenny Pettersson		                                      */
 /******************************************************************************/
-
+use_module(library(gui_tracer)).
+%telling prolog we're aware that the are seperate declarations of program, id and number
+:- discontiguous id/2.
+:- discontiguous number/2.
 /******************************************************************************/
 /* Prolog Lab 2 example - Grammar test bed                                    */
 /******************************************************************************/
@@ -12,7 +15,7 @@
 /* This is a slightly modified from of the Pascal Grammar for Lab 2 Prolog    */
 /******************************************************************************/
 
-program       --> prog_head, var_part, stat_part.
+prog       --> prog_head, var_part, stat_part.
 
 /******************************************************************************/
 /* Program Header                                                             */
@@ -32,7 +35,7 @@ number		  --> [Num], {															%Copies entire input into a variable called
 /******************************************************************************/
 /* Var_part                                                                   */
 /******************************************************************************/
-var_part			--> var, var_dec.
+var_part			--> var, var_dec_list.
 var_dec_list		--> var_dec | var_dec, var_dec_list.
 var_dec				--> id_list, colon, type, scolon.
 id_list				--> id | id, comma, id_list.
@@ -41,12 +44,12 @@ type				--> integer | real | boolean.
 /******************************************************************************/
 /* Stat part                                                                  */
 /******************************************************************************/
-stat_part			--> begin, stat_list, end.
-stat_list			--> stat | stat_list ; stat.
+stat_part			--> begin, stat_list, end, dot.
+stat_list			--> stat | stat, scolon, stat_list.
 stat				--> assign_stat.
 assign_stat			--> id, assign, expr.
-expr				--> term | expr, plus, term.
-term				--> factor | term, mult, factor.
+expr				--> term | term, plus, expr.
+term				--> factor | factor, mult, term.
 factor				--> lpar, expr, rpar | operand.
 operand 			--> id | number.
 
@@ -74,62 +77,7 @@ real				--> [264].
 id					--> [270].  
 assign				--> [271].
 number				--> [272].
-
-/******************************************************************************/
-/* Define the above tests                                                     */
-/******************************************************************************/
-
-testph 		:- prog_head([program, c, '(', input, ',', output, ')', ';'], []).
-testpr 		:- var_part([var, a, ':', integer], []).
-
-/******************************************************************************/
-/* Home-brewed tests	                                                      */
-/******************************************************************************/
-testnum 	:- phrase(number, ['8'], []).						
-
-teststatp	:- stat_part([begin, a, assign, b, '*', c, end, '.'], []).
-
-testassign	:- assign_stat([a, assign, b], []). 
-testassign1	:- assign_stat([a, assign, b, '*', c], []).
-
-teststatabc	:- stat([a, assign, b, '*', c], []).
-teststatab 	:- stat([a, assign, b], []). 
-
-teststatl	:- stat_list([a, assign, b], []).  
-teststatl2	:- stat_list([a, assign, b, '*', c], []). 
-teststatl3	:- stat_list([a, assign, b, ';', a, assign, c], []).
-teststatl4	:- stat_list([a, assign, b, '*', c, ';', a, assign, b, '*', c], []).
-
-/******************************************************************************/
-/* Cleared tests are placed under this line									  */
-/******************************************************************************/
-testfact0	:- factor([2], []).											
-testfact1 	:- factor(['(', a, ')'], []).									
-
-testterm0	:- term([a], []).											
-testterm1	:- term([a, '*', a], []).  									
-
-testexpr0	:- expr([a], []).											
-testexpr1	:- expr([a, '*', a], []).  	
-
-
-
-%vardec tests were changed because teachers did not include semicolons
-testvdl 	:- var_dec_list([a, ':', integer, ';', b, ':', real, ';'], []).
-testvdl1	:- var_dec_list([a, ':', integer, ';'], []). 
-testvd 		:- var_dec([a, ':', integer, ';'], []).
-
-testid 		:- id([c], []).  
-testid1 	:- id([b], []).
-testid2 	:- id([c], []).   
-testid3 	:- id([xyz], []).
-testid4 	:- id([xyz1234asx4as4as4as44as], []).
-testid5 	:- id([xyz-123], []).
-
-testtype 	:- type([boolean], []).
-testtype1 	:- type([real], []).
-testtype2 	:- type([integer], []). 
-
+undef  				--> [273].
 /******************************************************************************/
 /* Helper-predicates	                                                      */
 /******************************************************************************/
@@ -139,8 +87,9 @@ testtype2 	:- type([integer], []).
 /* Lexer									                                  */
 /******************************************************************************/
 
-lexer([],[]).
-lexer([H|T],[F|S]) :- match(H,F), lexer(T,S). 
+lexer([],[]).																	%%base case is an empty list
+lexer([H|T],[F|S]) :- match(H,F), lexer(T,S). 									%tail recurses through input and matches first word (H)
+																				%to produce token code (F)
 
 match(L,T) :- L = 'program', T is 256.
 match(L,T) :- L = 'input'  , T is 257.
@@ -160,17 +109,15 @@ match(L,T) :- L = ','      , T is 44.
 match(L,T) :- L = '.'      , T is 46.
 match(L,T) :- L = ':'      , T is 58.
 match(L,T) :- L = ';'      , T is 59.
+match(_,T) :- L = []	   , T is 273. %undefined
 
 
+match(L,T) :- name(L, [First|Rest]), char_type(First, alpha), match_id(Rest), T is 270.			%id
 
-match(L,T) :- name(L, [First|Rest]), char_type(First, alpha), match_id(Rest), T is 270.
+match(L,T) :- name(L, [First|Rest]), char_type(First, digit), match_num(Rest), T is 272.		%numbers
 
-match(L,T) :- name(L, [First|Rest]), char_type(First, digit), match_num(Rest), T is 272.
-
-match(L,T) :- char_type(L, end_of_file), T is 275.
-match(L,T) :- char_type(L, ascii)  , T is 273.
-
-
+match(L,T) :- char_type(L, end_of_file), T is 275.												%eof
+match(L,T) :- char_type(L, ascii)  , T is 273.													%catch all incase of erorrs
 
 match_id([]).
 match_id([First|Rest]) :- char_type(First, alnum), match_id(Rest).
@@ -178,7 +125,7 @@ match_id([First|Rest]) :- char_type(First, alnum), match_id(Rest).
 match_num([]).
 match_num([First|Rest]) :- char_type(First,digit), match_num(Rest).
 
-test_lexer(File, X) :- read_in(File, L), lexer(L,X), write(X).
+
 
 /******************************************************************************/
 /* From Programming in Prolog (4th Ed.) Clocksin & Mellish, Springer (1994)   */
@@ -201,11 +148,13 @@ restsent(_, C, [W1 | Ws ]) :- readword(C, W1, C1), restsent(W1, C1, Ws).
 /* and remembering what character came after the word (NB!)                   */
 /******************************************************************************/
 
-readword(C, W, _)  :- C = -1, W = C.                    						/* added EOF handling */
+readword(C, W, _)		:- C = -1, W = C.                    						/* added EOF handling */
 
-readword(C, W, C2) :- C = 58, get0(C1), checkforassign(C, C1, C2, W), get0(C1). %handling assign
+readword(58, W, C2) 	:- get0(C1), (C1 =:= 61 -> name(W, [58, 61]), get0(C2) ; name(W, [58]), C2 = C1).
 
-readword(C, W, C1) :- single_character( C ), name(W, [C]), get0(C1).			%handling single characters
+readword(C, W, C2) 		:- C = 58, get0(C1), checkforassign(C, C1, C2, W), get0(C1). %handling assign
+
+readword(C, W, C1) 		:- single_character( C ), name(W, [C]), get0(C1).			%handling single characters
 
 readword(C, W, C2) :-
    in_word(C, NewC ),
@@ -235,14 +184,13 @@ single_character(41).                  /* ) */
 single_character(42).                  /* + */
 single_character(43).                  /* * */
 single_character(44).                  /* , */
+single_character(45).                  /* - */
+single_character(46).                  /* . */
 single_character(59).                  /* ; */
 single_character(58).                  /* : */
 single_character(61).                  /* = */
-single_character(46).                  /* . */
 
-/******************************************************************************/
-/* Keywords									                                  */
-/******************************************************************************/
+
 
 
 /******************************************************************************/
@@ -277,6 +225,42 @@ testread([H|T]) :- nl, write('Testing C&M Reader, input file: '), write(H), nl,
                    read_in(H,L), write(L), nl,
                    nl, write(' end of C&M Reader test'), nl,
                    testread(T).
+
+
+
+/******************************************************************************/
+/* testing   		                                                          */
+/******************************************************************************/
+
+testparseok1 :- parse(['testfiles/testok1.pas']).
+
+testparse 	:- tell('tests.out'), write('Testin OK Programs'), nl, nl ,
+
+%parse(['testfiles/testok1.pas', 'testfiles/testok2.pas', 'testfiles/testok3.pas', 'testfiles/testok4.pas',
+%	   'testfiles/testok5.pas', 'testfiles/testok6.pas', 'testfiles/testok7.pas']).
+
+/*parse(['testfiles/testa.pas', 'testfiles/testb.pas', 'testfiles/testc.pas', 'testfiles/testd.pas', 'testfiles/teste.pas',
+	    'testfiles/testf.pas', 'testfiles/testg.pas', 'testfiles/testh.pas', 'testfiles/testi.pas', 'testfiles/testj.pas',
+	    'testfiles/testk.pas', 'testfiles/testl.pas', 'testfiles/testm.pas', 'testfiles/testn.pas', 'testfiles/testo.pas',
+	    'testfiles/testp.pas', 'testfiles/testq.pas', 'testfiles/testr.pas', 'testfiles/tests.pas', 'testfiles/testt.pas',
+		'testfiles/testu.pas', 'testfiles/testv.pas', 'testfiles/testw.pas', 'testfiles/testx.pas', 'testfiles/testy.pas',
+		'testfiles/testz.pas']).*/
+parse(['testfiles/fun1.pas', 'testfiles/fun2.pas', 'testfiles/fun3.pas', 'testfiles/fun4.pas', 'testfiles/fun5.pas']), told.
+
+
+
+
+
+parse([]). 
+parse([H|T]) :-  write('Testing '), write(H), nl, 
+                      read_in(H,L), lexer(L, Tokens),
+                      write(L), nl, write(Tokens), nl,
+                      parser(Tokens, []), nl,
+                      write(H), write(' end of parse'), nl, nl,
+                      parse(T).
+
+parser(Tokens, Res) :- (prog(Tokens, Res), Res = [], write('Parse OK!'));  
+                        write('Parse Fail!').
 
 /******************************************************************************/
 /* end of program                                                             */
