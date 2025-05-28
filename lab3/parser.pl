@@ -1,10 +1,16 @@
 /******************************************************************************/
 /* Per Emilsson & Kenny Pettersson		                                      */
 /******************************************************************************/
+/******************************************************************************/
+/* Tested by running:		                                      */
+/*		swipl -s parser.pl
+			parseall.
+		outside of Prolog:
+		diff parser.out ParserDemo.out
+		*/
+/******************************************************************************/
+
 use_module(library(gui_tracer)).
-%telling prolog we're aware that the are seperate declarations of program, id and number
-:- discontiguous id/2.
-:- discontiguous number/2.
 /******************************************************************************/
 /* Prolog Lab 2 example - Grammar test bed                                    */
 /******************************************************************************/
@@ -31,7 +37,6 @@ number		  --> [Num], {															%Copies entire input into a variable called
 					atom(Num),														
 					atom_number(Num, _)	
 				  }.
-
 /******************************************************************************/
 /* Var_part                                                                   */
 /******************************************************************************/
@@ -78,6 +83,7 @@ id					--> [270].
 assign				--> [271].
 number				--> [272].
 undef  				--> [273].
+end_of_file			--> [275].
 /******************************************************************************/
 /* Helper-predicates	                                                      */
 /******************************************************************************/
@@ -90,6 +96,7 @@ undef  				--> [273].
 lexer([],[]).																	%%base case is an empty list
 lexer([H|T],[F|S]) :- match(H,F), lexer(T,S). 									%tail recurses through input and matches first word (H)
 																				%to produce token code (F)
+match(-1, 275).								%eof
 
 match(L,T) :- L = 'program', T is 256.
 match(L,T) :- L = 'input'  , T is 257.
@@ -109,15 +116,11 @@ match(L,T) :- L = ','      , T is 44.
 match(L,T) :- L = '.'      , T is 46.
 match(L,T) :- L = ':'      , T is 58.
 match(L,T) :- L = ';'      , T is 59.
-match(_,T) :- L = []	   , T is 273. %undefined
-
 
 match(L,T) :- name(L, [First|Rest]), char_type(First, alpha), match_id(Rest), T is 270.			%id
-
 match(L,T) :- name(L, [First|Rest]), char_type(First, digit), match_num(Rest), T is 272.		%numbers
 
-match(L,T) :- char_type(L, end_of_file), T is 275.												%eof
-match(L,T) :- char_type(L, ascii)  , T is 273.													%catch all incase of erorrs
+match(_,273).																					%catch all incase of erorrs
 
 match_id([]).
 match_id([First|Rest]) :- char_type(First, alnum), match_id(Rest).
@@ -125,13 +128,10 @@ match_id([First|Rest]) :- char_type(First, alnum), match_id(Rest).
 match_num([]).
 match_num([First|Rest]) :- char_type(First,digit), match_num(Rest).
 
-
-
 /******************************************************************************/
 /* From Programming in Prolog (4th Ed.) Clocksin & Mellish, Springer (1994)   */
 /* Chapter 5, pp 101-103 (DFR (140421) modified for input from a file)        */
 /******************************************************************************/
-
 read_in(File,[W|Ws]) :- see(File), get0(C), 
                         readword(C, W, C1), restsent(W, C1, Ws), nl, seen.
 
@@ -148,19 +148,30 @@ restsent(_, C, [W1 | Ws ]) :- readword(C, W1, C1), restsent(W1, C1, Ws).
 /* and remembering what character came after the word (NB!)                   */
 /******************************************************************************/
 
-readword(C, W, _)		:- C = -1, W = C.                    						/* added EOF handling */
+readword(C, W, _)		:- C = -1, W = C.                    													% EOF handling
 
-readword(58, W, C2) 	:- get0(C1), (C1 =:= 61 -> name(W, [58, 61]), get0(C2) ; name(W, [58]), C2 = C1).
+readword(58, W, C2) 	:- get0(C1), (C1 =:= 61 -> name(W, [58, 61]), get0(C2) ; name(W, [58]), C2 = C1). 	% handling assign
 
-readword(C, W, C2) 		:- C = 58, get0(C1), checkforassign(C, C1, C2, W), get0(C1). %handling assign
+%readword(C, W, C2) 		:- C = 58, get0(C1), checkforassign(C, C1, C2, W), get0(C1). 						
 
-readword(C, W, C1) 		:- single_character( C ), name(W, [C]), get0(C1).			%handling single characters
+readword(C, W, C1) 		:- single_character(C), name(W, [C]), get0(C1).										% handling single characters
+
+%handle fun2 where id = 3a
+readword(C, W, C2) 		:- 
+	char_type(C, digit), 														%if(isdigit(lookahead))
+	peek_code(C1),																%peek at next char
+	char_type(C1, alpha), 														%if(isalpha(lookahead))
+	get0(C1),																	%remove alpha from input
+	!,																			%tell prolog not to run any other readword predicates
+	name(W, [C]),																%split digit and letter into two different 
+	C1 = C2.																	%push lookahead back to starter
 
 readword(C, W, C2) :-
    in_word(C, NewC ),
    get0(C1),
    restword(C1, Cs, C2),
    name(W, [NewC|Cs]).
+
 readword(_, W, C2) :- get0(C1), readword(C1, W, C2).
 
 restword(C, [NewC|Cs], C2) :-
@@ -171,9 +182,9 @@ restword(C, [NewC|Cs], C2) :-
 restword(C, [ ], C).
 
 %if lookahead == ':' && lookahead++ == '=' match assign 
-checkforassign(C, C1, C2, W) :- C1 = 61, name(W,[C, C1]), get0(C2). 
+%checkforassign(C, C1, C2, W) :- C1 = 61, name(W,[C, C1]), get0(C2). 
 %if we dont have assign, handle the single character	
-checkforassign(C, C1, C2, W) :- C1 \= 61, name(W, [C]), C1 = C2.
+%checkforassign(C, C1, C2, W) :- C1 \= 61, name(W, [C]), C1 = C2.
 
 /******************************************************************************/
 /* These characters form words on their own                                   */
@@ -186,12 +197,10 @@ single_character(43).                  /* * */
 single_character(44).                  /* , */
 single_character(45).                  /* - */
 single_character(46).                  /* . */
-single_character(59).                  /* ; */
+single_character(47).				   /* / */
 single_character(58).                  /* : */
+single_character(59).                  /* ; */
 single_character(61).                  /* = */
-
-
-
 
 /******************************************************************************/
 /* These characters can appear within a word.                                 */
@@ -205,51 +214,32 @@ in_word(C, C) :- C>47, C<58.              /* 1 2 ... 9 */
 /******************************************************************************/
 /* These words terminate a sentence                                           */
 /******************************************************************************/
-
 lastword('.').
 
-/******************************************************************************/
-/* added for demonstration purposes 140421, updated 150301                    */
-/* testa  - file input (characters + Pascal program)                          */
-/* testb  - file input as testa + output to file                              */
-/* ttrace - file input + switch on tracing (check this carefully)             */
-/******************************************************************************/
+parseall :- tell('parser.out'), 
+%BEGINNING OF PARSE ALL
+	write('Testing OK programs '), nl, nl,
 
-testa   :- testread(['cmreader.txt', 'testok1.pas']).
-testb   :- tell('cmreader.out'), testread(['cmreader.txt', 'testok1.pas']), told.
+	parse(['testfiles/testok1.pas', 'testfiles/testok2.pas', 'testfiles/testok3.pas', 'testfiles/testok4.pas',
+		'testfiles/testok5.pas', 'testfiles/testok6.pas', 'testfiles/testok7.pas']),
+	
+	write('Testing a-z programs '), nl, nl,
 
-ttrace  :- trace, testread(['cmreader.txt']), notrace, nodebug.
+	parse(['testfiles/testa.pas', 'testfiles/testb.pas', 'testfiles/testc.pas', 'testfiles/testd.pas', 'testfiles/teste.pas',
+			'testfiles/testf.pas', 'testfiles/testg.pas', 'testfiles/testh.pas', 'testfiles/testi.pas', 'testfiles/testj.pas',
+			'testfiles/testk.pas', 'testfiles/testl.pas', 'testfiles/testm.pas', 'testfiles/testn.pas', 'testfiles/testo.pas',
+			'testfiles/testp.pas', 'testfiles/testq.pas', 'testfiles/testr.pas', 'testfiles/tests.pas', 'testfiles/testt.pas',
+			'testfiles/testu.pas', 'testfiles/testv.pas', 'testfiles/testw.pas', 'testfiles/testx.pas', 'testfiles/testy.pas',
+			'testfiles/testz.pas']),
+			
+	write('Testing fun programs '), nl, nl,
 
-testread([]).
-testread([H|T]) :- nl, write('Testing C&M Reader, input file: '), write(H), nl,
-                   read_in(H,L), write(L), nl,
-                   nl, write(' end of C&M Reader test'), nl,
-                   testread(T).
+	parse(['testfiles/fun1.pas', 'testfiles/fun2.pas', 'testfiles/fun3.pas', 'testfiles/fun4.pas', 'testfiles/fun5.pas']),
 
+	write('Testing sem programs '), nl, nl,
 
-
-/******************************************************************************/
-/* testing   		                                                          */
-/******************************************************************************/
-
-testparseok1 :- parse(['testfiles/testok1.pas']).
-
-testparse 	:- tell('tests.out'), write('Testin OK Programs'), nl, nl ,
-
-%parse(['testfiles/testok1.pas', 'testfiles/testok2.pas', 'testfiles/testok3.pas', 'testfiles/testok4.pas',
-%	   'testfiles/testok5.pas', 'testfiles/testok6.pas', 'testfiles/testok7.pas']).
-
-/*parse(['testfiles/testa.pas', 'testfiles/testb.pas', 'testfiles/testc.pas', 'testfiles/testd.pas', 'testfiles/teste.pas',
-	    'testfiles/testf.pas', 'testfiles/testg.pas', 'testfiles/testh.pas', 'testfiles/testi.pas', 'testfiles/testj.pas',
-	    'testfiles/testk.pas', 'testfiles/testl.pas', 'testfiles/testm.pas', 'testfiles/testn.pas', 'testfiles/testo.pas',
-	    'testfiles/testp.pas', 'testfiles/testq.pas', 'testfiles/testr.pas', 'testfiles/tests.pas', 'testfiles/testt.pas',
-		'testfiles/testu.pas', 'testfiles/testv.pas', 'testfiles/testw.pas', 'testfiles/testx.pas', 'testfiles/testy.pas',
-		'testfiles/testz.pas']).*/
-parse(['testfiles/fun1.pas', 'testfiles/fun2.pas', 'testfiles/fun3.pas', 'testfiles/fun4.pas', 'testfiles/fun5.pas']), told.
-
-
-
-
+	parse(['testfiles/sem1.pas', 'testfiles/sem2.pas', 'testfiles/sem3.pas', 'testfiles/sem4.pas', 'testfiles/sem5.pas']), told.
+%END OF PARSE ALL
 
 parse([]). 
 parse([H|T]) :-  write('Testing '), write(H), nl, 
