@@ -1,254 +1,233 @@
 #imports
 import sys
 
-import keytoktab
-import lexer
-import symtab
-import optab
 from keytoktab import *
-from symtab import *
+from symtab import SymbolTable
 from optab import *
-from lexer import *
+from lexer import Lexer
 
-#declarations
-DEBUG = 0
-lookahead = 0
-is_parse_ok = 1
+#This turns the whole thing into a class to adhere to a more modular and object-oriented design
+class Parser:
 
-#debug prints
-def into(s: str):
-    if(DEBUG):
-        print(f"\n *** In {s}!")
+    #The __init__ is the constructor that runs immediately after a new Parser is created and initializes variables etc
+    def __init__(self, debug: bool = True):
+        #self refers to the new instance being created we use this to make these variables specific to this instance
+        self.symtab = symtab
+        self.lexer = lexer
+        self.debug = debug
+        self.lookahead: int | str = ''
+        self.is_parse_ok: bool = True
     
-def outof(s: str):
-    if(DEBUG):
-        print(f"\n *** Out {s}!")
-        
-#parser function
-def match(t: int):
-    global is_parse_ok, lookahead
+    #Make the debug prints into a log function instead
+    def log(self, name: str, entering: bool = True):
+        if not self.debug:
+            return
+        prefix = 'In' if entering else 'Out'
+        print(f"\n *** {prefix} {name}!")
 
-    if(DEBUG):
-        print(f"\n *** In match expected: {keytoktab.tok2lex(t)}, found: {keytoktab.tok2lex(lookahead)}")
-        
-    if(lookahead == t):
-        lookahead = lexer.get_token()
-    else:
-        is_parse_ok = 0
-        print(f"SYNTAX:   Symbol expected {keytoktab.tok2lex(t)} found {lexer.get_lexeme()}\n")
-        
-#the grammar functions
-def program_header():
-    into("program_header")
-    match(toktyp.program) 
-    
-    if keytoktab.lex2tok(lexer.get_lexeme()) == toktyp.id:
-        symtab.addp_name(lexer.get_lexeme())
-    else:
-        addp_name("***")
-        
-    match(toktyp.id)
-    match('(')
-    match(toktyp.input)
-    match(',')
-    match(toktyp.output)
-    match(')');
-    match(';')
-    outof("program_header")
-    
-def parser():
-    global is_parse_ok, lookahead
-    
-    into("parser")
-    lookahead = lexer.get_token()
-    if(lookahead == '$'):
-        print(f"\nWARNING: Input file is empty")
-        is_parse_ok = 0
-    if(is_parse_ok):
-        prog()
-        
-    if(lookahead != '$'):
-        leftinbuf()
-    
-    symtab.p_symtab()
-    outof("parser")
-    return is_parse_ok
-    
-def prog():
-    program_header()
-    varpart()
-    statpart()
+    #We can use both int or str in the parameter, in reality we can pass any type here since python does not enforce it
+    def match(self, expected: int | str):
+        if self.debug:
+            print(f"\n *** In match expected: {tok2lex(expected)}, found: {tok2lex(self.lookahead)}")
 
-def varpart():
-    into("varpart")
-    match(toktyp.var)
-    vardeclist()
-    outof("varpart")
-
-def vardeclist():
-    into("vardeclist")
-    vardec()
-    if(lookahead == toktyp.id):
-        vardeclist()
-    outof("vardeclist")
-
-def vardec():
-    into("vardec")
-    idlist()
-    match(':')
-    type()
-    match(';')
-    outof("vardec")
-
-def idlist():
-    global is_parse_ok
-    
-    into("idlist")
-    if(lookahead == toktyp.id):
-        if not symtab.find_name(lexer.get_lexeme()):
-            symtab.addv_name(lexer.get_lexeme())
+        if self.lookahead == expected:
+            self.lookahead = self.lexer.get_token()
         else:
-            print(f"\nSEMANTIC: ID already declared: {lexer.get_lexeme()}")
-            is_parse_ok = 0
+            self.is_parse_ok = False
+            print(f"SYNTAX: Symbol expected {tok2lex(expected)} found {self.lexer.get_lexeme()}\n")
+    
+    def program_header(self):
+        self.log('program_header', True)
+        self.match(toktyp.PROGRAM)
+
+        name = self.lexer.get_lexeme()
+        if lex2tok(name) == toktyp.ID:
+            self.symtab.addp_name(name)
+        else:
+            self.symtab.addp_name('***')
+
+        self.match(toktyp.ID)
         
-    match(toktyp.id)
-    if(lookahead == ','):
-        match(',')
-        idlist()
-    outof("idlist")
+        #we loop over the expected symbols and make on match call with each
+        for symbol in ('(', toktyp.INPUT, ',', toktyp.OUTPUT, ')', ';'):
+            self.match(symbol)
+        self.log('program_header', False)
 
-def type():
-    into("type")
-    if(lookahead == toktyp.integer):
-        symtab.setv_type(toktyp.integer)
-        match(toktyp.integer)
-    elif(lookahead == toktyp.boolean):
-        symtab.setv_type(toktyp.boolean)
-        match(toktyp.boolean)
-    elif(lookahead == toktyp.real):
-        symtab.setv_type(toktyp.real)
-        match(toktyp.real)
-    else:
-        symtab.setv_type(toktyp.error)
-        print(f"\nSYNTAX: Type name expected found {lexer.get_lexeme()}")
-    outof("type")
+    def varpart(self):
+        self.log('varpart', True)
+        self.match(toktyp.VAR)
+        self.vardeclist()
+        self.log('varpart', False)
 
-def statpart():
-    into("statpart")
-    match(toktyp.begin)
-    statlist()
-    match(toktyp.end)
-    match('.')
-    outof("statpart")
+    def vardeclist(self):
+        self.log('vardeclist', True)
+        self.vardec()
+        while self.lookahead == toktyp.ID:
+            self.vardeclist()
+        self.log('vardeclist', False)
 
-def statlist():
-    into("statlist")
-    stat()
-    if(lookahead == ';'):
-        match(';')
-        statlist()
-    outof("statlist")
+    def vardec(self):
+        self.log('vardec', True)
+        self.idlist()
+        self.match(':')
+        self._type()
+        self.match(';')
+        self.log('vardec', False)
 
-def stat():
-    into("stat")
-    assignstat()
-    outof("stat")
+    def idlist(self):
+        self.log('idlist', True)
+        lexeme = self.lexer.get_lexeme()
+        if self.lookahead == toktyp.ID:
+            if not self.symtab.find_name(lexeme):
+                self.symtab.addv_name(lexeme)
+            else:
+                print(f"SEMANTIC: ID already declared: {lexeme}")
+                self.is_parse_ok = False
+            self.match(toktyp.ID)
+            if self.lookahead == ',':
+                self.match(',')
+                self.idlist()
+        self.log('idlist', False)
 
-def assignstat():
-    global is_parse_ok
+    def _type(self):
+        self.log('type', True)
+        if self.lookahead in (toktyp.INTEGER, toktyp.BOOLEAN, toktyp.REAL):
+            self.symtab.setv_type(self.lookahead)
+            self.match(self.lookahead)
+        else:
+            self.symtab.setv_type(toktyp.ERROR)
+            print(f"SYNTAX: Type name expected found {get_lexeme()}")
+        self.log('type', False)
+
+    def statpart(self):
+        self.log('statpart', True)
+        self.match(toktyp.BEGIN)
+        self.statlist()
+        self.match(toktyp.END_KW)
+        self.match('.')
+        self.log('statpart', False)
+
+    def statlist(self):
+        self.log('statlist', True)
+        self.stat()
+        while self.lookahead == ';':
+            self.match(';')
+            self.statlist()
+        self.log('statlist', False)
+
+    def stat(self):
+        self.log('stat', True)
+        self.assignstat()
+        self.log('stat', False)
+
+    def assignstat(self):
+        self.log('assignstat', True)
+        name = self.lexer.get_lexeme()
+        if self.symtab.find_name(name):
+            assigned_type = self.symtab.get_ntype(name)
+        else:
+            print(f"SEMANTIC: ID not declared: {name}")
+            self.is_parse_ok = False
+            assigned_type = toktyp.ERROR
+
+        self.match(toktyp.ID)
+        self.match(toktyp.ASSIGN)
+        expr_type = self.expr()
+
+        if assigned_type != expr_type:
+            if not ({assigned_type, expr_type} == {toktyp.ERROR}):
+                print(f"SEMANTIC: Assign types: {tok2lex(assigned_type)} := {tok2lex(expr_type)}")
+                self.is_parse_ok = False
+        self.log('assignstat', False)
+
+    def expr(self) -> int:
+        self.log('expr', True)
+        left = self.term()
+        if self.lookahead == '+':
+            self.match('+')
+            right = self.expr()
+            result = get_otype('+', right, left)
+        else:
+            result = left
+        self.log('expr', False)
+        return result
+
+    def term(self) -> int:
+        self.log('term', True)
+        left = self.factor()
+        if self.lookahead == '*':
+            self.match('*')
+            right = self.term()
+            result = get_otype('*', right, left)
+        else:
+            result = left
+        self.log('term', False)
+        return result
+
+    def factor(self) -> int:
+        self.log('factor', True)
+        if self.lookahead == '(':  # grouping
+            self.match('(')
+            result = self.expr()
+            self.match(')')
+        else:
+            result = self.operand()
+        self.log('factor', False)
+        return result
+
+    def operand(self) -> int:
+        self.log('operand', True)
+        if self.lookahead == toktyp.ID:
+            name = self.lexer.get_lexeme()
+            if not self.symtab.find_name(name):
+                print(f"SEMANTIC: ID not declared: {name}")
+                self.is_parse_ok = False
+                result = toktyp.UNDEF
+            else:
+                result = self.symtab.get_ntype(name)
+            self.match(toktyp.ID)
+        elif self.lookahead == toktyp.NUMBER:
+            self.match(toktyp.NUMBER)
+            result = toktyp.INTEGER
+        else:
+            result = toktyp.ERROR
+            self.is_parse_ok = False
+            print(f"SYNTAX: Operand expected, found {get_lexeme()}")
+        self.log('operand', False)
+        return result
     
-    into("assign stat")
+    def leftinbuf(self):
+        self.is_parse_ok = False
+        print("\nSYNTAX:   Extra symbols after end of parse!")
+        while self.lookahead != '$':
+            print(f"{self.lexer.get_lexeme()} ,")
+            self.lookahead = self.lexer.get_token()
+        print("\n")
     
-    if(find_name(lexer.get_lexeme())):
-        getting_assigned = get_ntype(lexer.get_lexeme())
-        
-    if not find_name(get_lexeme()) and not lex2tok("number"):
-        print(f"\nSEMANTIC: Assign types: {tok2lex(getting_assigned)} := {tok2lex(assignee)}")
-        getting_assigned = toktyp.undef
-        is_parse_ok = 0
-    
-    match(toktyp.id)
-    match(toktyp.assign)
-    assignee = expr()
-    if(getting_assigned != assignee):
-        if tok2lex(getting_assigned) == "error" and tok2lex(assignee) == "error":
-            print(f"\nSEMANTIC: Assign types: {tok2lex(getting_assigned)} := {tok2lex(assignee)}")
-            is_parse_ok = 0
-        
-    outof("assignstat")
+    def parse(self) -> bool:
+        self.log('parser', True)
+        self.lookahead = self.lexer.get_token()
 
-def expr():
-    into("expr")
-    A = term()
-    if(lookahead == '+'):
-        match('+')
-        outof("expr")
-        return get_otype('+',expr(),A)
-    outof("expr")
-    return A
+        if self.lookahead == '$':
+            print("WARNING: Input file is empty")
+            self.is_parse_ok = False
+        if self.is_parse_ok:
+            self.program_header()
+            self.varpart()
+            self.statpart()
 
-def term():
-    into("term")
-    term_tok = factor()
-    if(lookahead == '*'):
-        match('*')        
-        outof("term")
-        return get_otype('*',term(),term_tok)  
-    outof("term")
-    return term_tok
+        if self.lookahead != '$':
+            self.leftinbuf()
 
-def factor():
-    into("factor")
-    if(lookahead == '('):
-        match('(')
-        fact = expr()
-        match(')')
-    else:
-        fact = operand()
-    outof("factor")
-    return fact
+        self.symtab.p_symtab()
+        self.log('parser', False)
+        return self.is_parse_ok
 
-def operand():
-    global is_parse_ok
-    
-    into("operand")
-    if(lookahead == toktyp.id):
-        if not find_name(get_lexeme()):
-            print(f"\nSEMANTIC: ID not declared: {get_lexeme()}")
-            is_parse_ok = 0
-            oper = undef
-        
-        oper = get_ntype(get_lexeme())
-        match(toktyp.id)
-   
-    elif(lookahead == toktyp.number):
-        match(toktyp.number)
-        return toktyp.integer
-    else:
-        oper = error
-        is_parse_ok = 0
-        print(f"\nSYNTAX: Operand expected, found {lexer.get_lexeme()}")
-    outof("operand")
-    return oper
-
-def leftinbuf():
-    global is_parse_ok
-    
-    is_parse_ok = 0
-    print(f"\nSYNTAX:	Extra symbols after end of parse!")
-    while(lookahead != '$'):
-        print(f"{lexer.get_lexeme()} ,")
-        match(lookahead)
-    print(f"\n")
-
-if __name__ == "__main__":
-    success = parser()
-
-    if success:
-        print("\n Parse Successful! \n")
-    else:
-        print("\n Parse Failed! \n")
-
-    # Exit with status 0 for success, 1 for failure
-    import sys
+# The entry point where we create a Parser object and invoke the .parse() method
+if __name__ == '__main__':
+    symtab = SymbolTable()
+    lexer = Lexer()
+    parser = Parser(debug=False)
+    success = parser.parse()
+    print("\n Parse Successful! \n" if success else "\n Parse Failed! \n")
     sys.exit(0 if success else 1)

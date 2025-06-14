@@ -1,66 +1,67 @@
 import sys
-import keytoktab
+
+from keytoktab import *
 
 BUFSIZE = 1024
-_source = ""
-_pbuf    = 0
-_last_lexeme = ""
 
-def get_prog():
-    global _source, _pbuf
-    data = sys.stdin.read()
-    _source = data[:BUFSIZE-1] + '$'
-    _pbuf = 0
+class Lexer:
+    def __init__(self, bufsize: int = BUFSIZE):
+        self.bufsize = bufsize
+        self.source: str = ""
+        self.pbuf: int = 0
+        self.last_lexeme: str = ""
     
-    pbuffer()
+    def get_prog(self):
+        data = sys.stdin.read()
+        self.source = data[:self.bufsize-1] + '$' #slice of everything beyond the bufsize and add an $ to the end
+        self.pbuf = 0
+        self.pbuffer()
 
-#Display the buffer
-def pbuffer():
-    # print everything except the final '$'
-    sys.stdout.write(_source[:-1])
-    sys.stdout.flush()
+    #Display the buffer
+    def pbuffer(self):
+        # print everything except the final '$'
+        sys.stdout.write(self.source[:-1])
+        sys.stdout.flush()
 
-def get_char():
-    global _pbuf, _last_lexeme
-    # skip whitespace
-    while _pbuf < len(_source) and _source[_pbuf].isspace():
-        _pbuf += 1
-    if _pbuf >= len(_source):
-        return None
-    ch = _source[_pbuf]
-    _pbuf += 1
-    return ch
+    def get_char(self) -> str | None:
+        # skip whitespace
+        while self.pbuf < len(self.source) and self.source[self.pbuf].isspace():
+            self.pbuf += 1
+        if self.pbuf >= len(self.source):
+            return None
+        ch = self.source[self.pbuf]
+        self.pbuf += 1
+        return ch
 
-def get_token():
-    global _last_lexeme, _pbuf
-    if not _source:
-        get_prog()
+    def get_token(self) -> int | str:
+        if not self.source:
+            self.get_prog()
 
-    # build up the lexeme
-    lexeme_chars = []
-    ch = get_char()
-    if ch is None:
-        return keytoktab.error
-    lexeme_chars.append(ch)
+        # build up the lexeme
+        lexeme_chars = []
+        ch = self.get_char()
+        if ch is None:
+            return error
+        lexeme_chars.append(ch)
 
-    # consume alnum sequence
-    while _pbuf < len(_source) and _source[_pbuf].isalnum():
-        prev, curr = _source[_pbuf-1], _source[_pbuf]
-        if not (prev.isalnum() or prev.isspace()):
-            break
-        if prev.isdigit() and curr.isalpha():
-            break
-        lexeme_chars.append(_source[_pbuf])
-        _pbuf += 1
+        # consume alnum sequence
+        while self.pbuf < len(self.source) and self.source[self.pbuf].isalnum():
+            prev, curr = self.source[self.pbuf-1], self.source[self.pbuf]
+            if not (prev.isalnum() or prev.isspace()):
+                break
+            if prev.isdigit() and curr.isalpha():
+                break
+            lexeme_chars.append(curr)
+            self.pbuf += 1
 
-    # handle ':='
-    if _pbuf < len(_source)-1 and lexeme_chars and lexeme_chars[-1] == ':' and _source[_pbuf] == '=':
-        lexeme_chars.append('=')
-        _pbuf += 1
+        # handle ':='
+        if self.pbuf < len(self.source)-1 and lexeme_chars and lexeme_chars[-1] == ':' and self.source[self.pbuf] == '=':
+            lexeme_chars.append('=')
+            self.pbuf += 1
 
-    # finalize the lexeme
-    _last_lexeme = ''.join(lexeme_chars)
-    return keytoktab.lex2tok(_last_lexeme)
+        # finalize the lexeme
+        self.last_lexeme = ''.join(lexeme_chars)
+        return lex2tok(self.last_lexeme)
 
-def get_lexeme():
-    return _last_lexeme
+    def get_lexeme(self) -> str:
+        return self.last_lexeme

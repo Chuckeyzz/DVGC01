@@ -1,30 +1,39 @@
-import keytoktab
+from dataclasses import dataclass
+from typing import List, Union
+
 from keytoktab import *
 
-optab = [
-    ('+', toktyp.integer, toktyp.integer, toktyp.integer),
-    ('+', toktyp.real,    toktyp.real,    toktyp.real),
-    ('+', toktyp.integer, toktyp.real,    toktyp.real),
-    ('+', toktyp.real,    toktyp.integer, toktyp.real),
+@dataclass()
+class OpEntry:
+    op: str
+    left: toktyp
+    right: toktyp
+    result: toktyp
+    
+optab: List[OpEntry] = [
+    OpEntry('+', toktyp.INTEGER, toktyp.INTEGER, toktyp.INTEGER),
+    OpEntry('+', toktyp.REAL,    toktyp.REAL,    toktyp.REAL),
+    OpEntry('+', toktyp.INTEGER, toktyp.REAL,    toktyp.REAL),
+    OpEntry('+', toktyp.REAL,    toktyp.INTEGER, toktyp.REAL),
 
-    ('*', toktyp.integer, toktyp.integer, toktyp.integer),
-    ('*', toktyp.real,    toktyp.real,    toktyp.real),
-    ('*', toktyp.integer, toktyp.real,    toktyp.real),
-    ('*', toktyp.real,    toktyp.integer, toktyp.real),
+    OpEntry('*', toktyp.INTEGER, toktyp.INTEGER, toktyp.INTEGER),
+    OpEntry('*', toktyp.REAL,    toktyp.REAL,    toktyp.REAL),
+    OpEntry('*', toktyp.INTEGER, toktyp.REAL,    toktyp.REAL),
+    OpEntry('*', toktyp.REAL,    toktyp.INTEGER, toktyp.REAL),
 
-    ('$', toktyp.undef,   toktyp.undef,   toktyp.undef),
+    OpEntry('$', toktyp.UNDEF,   toktyp.UNDEF,   toktyp.UNDEF),
 ]
 
-#display the op tab 
 def p_optab():
-    for op, left, right, result in optab:
-        print(f"\n{op:<12}{tok2lex(left):>4} {tok2lex(right)} {tok2lex(result)}")
-        
-#return the type of a binary expression op arg1 arg2 
-def get_otype(op: int, arg1: int, arg2: int) -> int:
-    for o, l, r, res in optab:
-        if o == '$':
+    for entry in optab:
+        if entry.op == '$':
             break
-        if o == op and l == arg1 and r == arg2:
-            return res
-    return toktyp.undef
+        print(f"{entry.op:<3} {tok2lex(entry.left):>7} {tok2lex(entry.right):>7} -> {tok2lex(entry.result)}")
+
+def get_otype(op: Union[str, toktyp], arg1: toktyp, arg2: toktyp) -> toktyp:
+    for entry in optab:
+        if entry.op == '$':
+            break
+        if entry.op == op and entry.left == arg1 and entry.right == arg2:
+            return entry.result
+    return toktyp.UNDEF
