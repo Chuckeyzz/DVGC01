@@ -1,3 +1,7 @@
+# **********************************************************************
+# *Per Emilsson och Kenny Pettersson                                   *
+# **********************************************************************
+
 from enum import IntEnum
 from dataclasses import dataclass
 from typing import List, Union, Dict
@@ -34,7 +38,7 @@ class tab:
 
 tokentab: List[tab] = [
     tab("id",      toktyp.ID),
-    tab("number",  toktyp.NUMBER),
+    #tab("number",  toktyp.NUMBER),
     tab(":=",      toktyp.ASSIGN),
     tab("undef",   toktyp.UNDEF),
     tab("predef",  toktyp.PREDEF),

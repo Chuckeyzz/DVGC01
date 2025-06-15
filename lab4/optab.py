@@ -1,3 +1,7 @@
+# **********************************************************************
+# *Per Emilsson och Kenny Pettersson                                   *
+# **********************************************************************
+
 from dataclasses import dataclass
 from typing import List, Union
 

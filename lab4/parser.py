@@ -1,3 +1,7 @@
+# **********************************************************************
+# *Per Emilsson och Kenny Pettersson                                   *
+# **********************************************************************
+
 #imports
 import sys
 
@@ -10,7 +14,7 @@ from lexer import Lexer
 class Parser:
 
     #The __init__ is the constructor that runs immediately after a new Parser is created and initializes variables etc
-    def __init__(self, debug: bool = True):
+    def __init__(self, symtab: SymbolTable, lexer: Lexer, debug: bool = True):
         #self refers to the new instance being created we use this to make these variables specific to this instance
         self.symtab = symtab
         self.lexer = lexer
@@ -70,7 +74,7 @@ class Parser:
         self.log('vardec', True)
         self.idlist()
         self.match(':')
-        self._type()
+        self.type()
         self.match(';')
         self.log('vardec', False)
 
@@ -89,14 +93,14 @@ class Parser:
                 self.idlist()
         self.log('idlist', False)
 
-    def _type(self):
+    def type(self):
         self.log('type', True)
         if self.lookahead in (toktyp.INTEGER, toktyp.BOOLEAN, toktyp.REAL):
             self.symtab.setv_type(self.lookahead)
             self.match(self.lookahead)
         else:
             self.symtab.setv_type(toktyp.ERROR)
-            print(f"SYNTAX: Type name expected found {get_lexeme()}")
+            print(f"SYNTAX: Type name expected found {self.lexer.get_lexeme()}")
         self.log('type', False)
 
     def statpart(self):
@@ -192,7 +196,7 @@ class Parser:
         else:
             result = toktyp.ERROR
             self.is_parse_ok = False
-            print(f"SYNTAX: Operand expected, found {get_lexeme()}")
+            print(f"SYNTAX: Operand expected")
         self.log('operand', False)
         return result
     
@@ -200,9 +204,8 @@ class Parser:
         self.is_parse_ok = False
         print("\nSYNTAX:   Extra symbols after end of parse!")
         while self.lookahead != '$':
-            print(f"{self.lexer.get_lexeme()} ,")
+            print(f"{self.lexer.get_lexeme()} ")
             self.lookahead = self.lexer.get_token()
-        print("\n")
     
     def parse(self) -> bool:
         self.log('parser', True)
@@ -227,7 +230,7 @@ class Parser:
 if __name__ == '__main__':
     symtab = SymbolTable()
     lexer = Lexer()
-    parser = Parser(debug=False)
+    parser = Parser(symtab, lexer, debug=False)
     success = parser.parse()
     print("\n Parse Successful! \n" if success else "\n Parse Failed! \n")
     sys.exit(0 if success else 1)
